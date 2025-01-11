@@ -11,25 +11,25 @@ async function loadWelcomeConfig() {
             return acc;
         }, {});
     } catch (err) {
-        //console.error('Erro ao carregar a configuração de boas-vindas:', err);
+        //console.error('Error loading welcome config:', err);
         return {};
     }
 }
 
 function getOrdinalSuffix(number) {
     if (number === 11 || number === 12 || number === 13) {
-        return 'º';
+        return 'th';
     }
     const lastDigit = number % 10;
     switch (lastDigit) {
         case 1:
-            return 'º';
+            return 'st';
         case 2:
-            return 'º';
+            return 'nd';
         case 3:
-            return 'º';
+            return 'rd';
         default:
-            return 'º';
+            return 'th';
     }
 }
 
@@ -63,30 +63,30 @@ module.exports = async (client) => {
                 const welcomecard = new Wcard()
                     .setName(userName)
                     .setAvatar(member.user.displayAvatarURL({ format: 'png' }))
-                    .setTitle("Bem-vindo ao Servidor")
+                    .setTitle("Welcome to Server")
                     .setColor("00e5ff") 
                     .setBackground(randomImage);
                 
                 const card = await welcomecard.build();
-                const attachment = new AttachmentBuilder(card, { name: 'boasvindas.png' });
+                const attachment = new AttachmentBuilder(card, { name: 'welcome.png' });
 
                 const embed = new EmbedBuilder()
-                    .setTitle("Bem-vindo ao Servidor!")
-                    .setDescription(`${member}! Você é o **${memberCount}${suffix}** membro do nosso servidor!`)
+                    .setTitle("Welcome to the Server!")
+                    .setDescription(`${member}! You are the **${memberCount}${suffix}** member of our server!`)
                     .setColor("#00e5ff")
                     .setThumbnail(member.user.displayAvatarURL())
-                    .setImage('attachment://boasvindas.png')
+                    .setImage('attachment://welcome.png')
                     .addFields(
-                        { name: 'Usuário', value: userName, inline: true },
-                        { name: 'Data de Entrada', value: joinDate, inline: true },
-                        { name: 'Conta Criada', value: creationDate, inline: true }
+                        { name: 'Username', value: userName, inline: true },
+                        { name: 'Join Date', value: joinDate, inline: true },
+                        { name: 'Account Created', value: creationDate, inline: true }
                     )
-                    .setFooter({ text: "Estamos felizes em ter você aqui!", iconURL: serverIcon })
+                    .setFooter({ text: "We're glad to have you here!", iconURL: serverIcon })
                     .setAuthor({ name: serverName, iconURL: serverIcon })
                     .setTimestamp();
 
                 welcomeChannel.send({
-                    content: `Olá ${member}!`,
+                    content: `Hey ${member}!`,
                     embeds: [embed],
                     files: [attachment]
                 });
