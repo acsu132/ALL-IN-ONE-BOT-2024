@@ -63,7 +63,7 @@ module.exports = async (client) => {
                 const welcomecard = new Wcard()
                     .setName(userName)
                     .setAvatar(member.user.displayAvatarURL({ format: 'png' }))
-                    .setTitle("Welcome to Server")
+                    .setTitle("Bem-vindo!")
                     .setColor("00e5ff") 
                     .setBackground(randomImage);
                 
@@ -71,8 +71,8 @@ module.exports = async (client) => {
                 const attachment = new AttachmentBuilder(card, { name: 'welcome.png' });
 
                 const embed = new EmbedBuilder()
-                    .setTitle("Welcome to the Server!")
-                    .setDescription(`${member}! You are the **${memberCount}${suffix}** member of our server!`)
+                    .setTitle("Bem-vindo ao servidor!")
+                    .setDescription(`${member}! Você é o **${memberCount}${suffix}** membro do nosso servidor!`)
                     .setColor("#00e5ff")
                     .setThumbnail(member.user.displayAvatarURL())
                     .setImage('attachment://welcome.png')
@@ -81,7 +81,7 @@ module.exports = async (client) => {
                         { name: 'Join Date', value: joinDate, inline: true },
                         { name: 'Account Created', value: creationDate, inline: true }
                     )
-                    .setFooter({ text: "We're glad to have you here!", iconURL: serverIcon })
+                    .setFooter({ text: "É muito bom te ver por aqui!", iconURL: serverIcon })
                     .setAuthor({ name: serverName, iconURL: serverIcon })
                     .setTimestamp();
 
