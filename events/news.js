@@ -10,11 +10,21 @@ const COLLECTION_NAME = 'sentArticles';
 // ID do canal onde as notícias serão enviadas
 const CHANNEL_ID = '1309897299278696618';
 
+// Thumbnails específicas por tema
+const THUMBNAILS = {
+    android: 'URL_THUMBNAIL_ANDROID',
+    ios: 'URL_THUMBNAIL_IOS',
+    windows: 'URL_THUMBNAIL_WINDOWS',
+    chromebook: 'URL_THUMBNAIL_CHROMEBOOK',
+};
+
+const TOPICS = ['android', 'ios', 'windows', 'chromebook'];
+
 module.exports = {
     init: (client) => {
         client.on('ready', async () => {
-            console.log('Módulo de notícias sobre Android inicializado.');
-            
+            console.log('Módulo de notícias inicializado.');
+
             // Conecta ao MongoDB
             const mongoClient = new MongoClient(MONGO_URI);
             await mongoClient.connect();
@@ -22,35 +32,34 @@ module.exports = {
             const collection = db.collection(COLLECTION_NAME);
 
             // Primeiro envio após 5 segundos
-            setTimeout(() => enviarNoticiasAndroid(client, collection), 5000);
-            
-            // Envio regular a cada 2 horas
-            setInterval(() => enviarNoticiasAndroid(client, collection), 7200000);
+            setTimeout(() => enviarNoticias(client, collection), 5000);
+
+            // Envio regular a cada 1 hora (12 pesquisas por dia)
+            setInterval(() => enviarNoticias(client, collection), 3600000);
         });
     },
-    enviarNoticiasAndroid, // Exportando a função
+    enviarNoticias, // Exportando a função
 };
 
-// Função para buscar notícias
-async function buscarNoticiasAndroid() {
+async function buscarNoticias(topico) {
     try {
         const response = await axios.get('https://newsapi.org/v2/everything', {
             params: {
-                q: 'android',
+                q: topico,
                 apiKey: '337b6806debe4df1b083f92f768fe2bf', // Variável de ambiente para a chave da API
                 language: 'pt',
             },
         });
         return response.data.articles;
     } catch (error) {
-        console.error('Erro ao buscar notícias:', error.message);
+        console.error(`Erro ao buscar notícias sobre ${topico}:`, error.message);
         return [];
     }
 }
 
-// Função para enviar notícias
-async function enviarNoticiasAndroid(client, collection) {
-    const noticias = await buscarNoticiasAndroid();
+async function enviarNoticias(client, collection) {
+    const topico = TOPICS[Math.floor(Math.random() * TOPICS.length)]; // Escolhe um tema aleatório
+    const noticias = await buscarNoticias(topico);
     const canal = client.channels.cache.get(CHANNEL_ID);
 
     if (!canal) {
@@ -69,17 +78,17 @@ async function enviarNoticiasAndroid(client, collection) {
         await collection.insertOne({ url: noticia.url }); // Salva a URL no banco de dados
 
         const embed = new EmbedBuilder()
-            .setColor('#42f590')
+            .setColor('#1D3557')
             .setTitle(noticia.title)
             .setURL(noticia.url)
             .setDescription(noticia.description || 'Sem descrição disponível.')
-            .setThumbnail(noticia.source.url || 'https://via.placeholder.com/50') // Ícone do site
-            .setImage(noticia.urlToImage || 'https://images-ext-1.discordapp.net/external/5JUrLte6GqtsOYoRpWP1RcGagHDl5nyg7Hs5AyfF_yA/https/chromeunboxed.com/wp-content/uploads/2017/06/cropped-cuSiteIcon-1-32x32.png') // Exibe a imagem principal
+            .setThumbnail(THUMBNAILS[topico] || 'https://via.placeholder.com/50')
+            .setImage(noticia.urlToImage || 'https://via.placeholder.com/300')
             .addFields(
                 { name: 'Fonte', value: `[${noticia.source.name}](${noticia.url})`, inline: true },
-                { name: 'Data', value: new Date(noticia.publishedAt).toLocaleString(), inline: true }
+                { name: 'Publicado em', value: new Date(noticia.publishedAt).toLocaleString(), inline: true },
             )
-            .setFooter({ text: 'Notícias sobre Android' });
+            .setFooter({ text: `Notícias sobre ${topico.charAt(0).toUpperCase() + topico.slice(1)}` });
 
         await canal.send({ embeds: [embed] });
         noticiaEnviada = true;
@@ -87,6 +96,6 @@ async function enviarNoticiasAndroid(client, collection) {
     }
 
     if (!noticiaEnviada) {
-        console.log('Nenhuma nova notícia sobre Android foi encontrada.');
+        console.log(`Nenhuma nova notícia sobre ${topico} foi encontrada.`);
     }
 }
