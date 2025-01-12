@@ -100,11 +100,11 @@ const attachment = new AttachmentBuilder(cardBuffer, {
 
                 // Sending an embed with the song details and card image
                 const embed = new EmbedBuilder()
-                    .setAuthor({ name: "Now Streaming", iconURL: musicIcons.playerIcon, url: "https://discord.gg/xQF9f9yUEM" })
+                    .setAuthor({ name: "Now Streaming", iconURL: musicIcons.playerIcon, url: "https://discord.gg" })
                     .setDescription(`- Song name: **${track.info.title}**\n- Author: **${track.info.author}**`)
                     .setImage('attachment://songcard.png')
-                    .setFooter({ text: 'Let the Beat Drop!', iconURL: musicIcons.footerIcon })
-                    .setColor('#FF00FF');
+                    .setFooter({ text: 'Solta o som DJ!', iconURL: musicIcons.footerIcon })
+                    .setColor('#8400ff');
 
                 const buttonsRow = new ActionRowBuilder().addComponents(
                     new ButtonBuilder().setCustomId('volume_up').setEmoji('🔊').setStyle(ButtonStyle.Secondary),
@@ -141,11 +141,11 @@ const attachment = new AttachmentBuilder(cardBuffer, {
                 .setAuthor({
                     name: "Queue is Empty",
                     iconURL: musicIcons.alertIcon,
-                    url: "https://discord.gg/xQF9f9yUEM"
+                    url: "https://discord.gg"
                 })
                 .setDescription('**Leaving voice channel!**')
-                .setFooter({ text: 'Let the Beat Drop!', iconURL: musicIcons.footerIcon })
-                .setColor('#FFFF00');
+                .setFooter({ text: 'Solta o som DJ!', iconURL: musicIcons.footerIcon })
+                .setColor('#8400ff');
             channel.send({ embeds: [embed] });
             player.destroy();
         });
@@ -154,38 +154,38 @@ const attachment = new AttachmentBuilder(cardBuffer, {
             if (!interaction.isButton()) return;
 
             const player = client.riffy.players.get(interaction.guildId);
-            if (!player) return interaction.reply({ content: 'No active player!', ephemeral: true });
+            if (!player) return interaction.reply({ content: 'Nem há música tocando!', ephemeral: true });
 
             // Handle button interactions
             switch (interaction.customId) {
                 case 'volume_up':
                     player.setVolume(Math.min(player.volume + 10, 100));
-                    interaction.reply({ content: 'Volume increased!', ephemeral: true });
+                    interaction.reply({ content: 'Aumentado!', ephemeral: true });
                     break;
 
                 case 'volume_down':
                     player.setVolume(Math.max(player.volume - 10, 0));
-                    interaction.reply({ content: 'Volume decreased!', ephemeral: true });
+                    interaction.reply({ content: 'Volume diminuido!', ephemeral: true });
                     break;
 
                 case 'pause':
                     player.pause(true);
-                    interaction.reply({ content: 'Player paused.', ephemeral: true });
+                    interaction.reply({ content: 'Player pausado.', ephemeral: true });
                     break;
 
                 case 'resume':
                     player.pause(false);
-                    interaction.reply({ content: 'Player resumed.', ephemeral: true });
+                    interaction.reply({ content: 'Player resumido.', ephemeral: true });
                     break;
 
                 case 'skip':
                     player.stop(); 
-                    interaction.reply({ content: 'Skipped to the next track.', ephemeral: true });
+                    interaction.reply({ content: 'Música pulada :P.', ephemeral: true });
                     break;
 
                 case 'stop':
                     player.destroy(); 
-                    interaction.reply({ content: 'Stopped the music and disconnected.', ephemeral: true });
+                    interaction.reply({ content: 'A música eu parei e desconectei, yeah!.', ephemeral: true });
                     break;
 
                 case 'clear_queue':
@@ -198,7 +198,7 @@ const attachment = new AttachmentBuilder(cardBuffer, {
                         return interaction.reply({ content: 'The queue is empty.', ephemeral: true });
                     }
                     const queueEmbed = new EmbedBuilder()
-                        .setTitle('Current Music Queue')
+                        .setTitle('Aqui estão as músicas da fila:')
                         .setColor('#00FF00')
                         .setDescription(
                             player.queue.map((track, index) => `${index + 1}. **${track.info.title}**`).join('\n')
@@ -209,9 +209,9 @@ const attachment = new AttachmentBuilder(cardBuffer, {
                 case 'shuffle':
                     if (player.queue.size > 0) {
                         player.queue.shuffle();
-                        interaction.reply({ content: 'The queue has been shuffled!', ephemeral: true });
+                        interaction.reply({ content: 'Eu misturei a fila!', ephemeral: true });
                     } else {
-                        interaction.reply({ content: 'The queue is empty!', ephemeral: true });
+                        interaction.reply({ content: 'Está tão vazio aqui...', ephemeral: true });
                     }
                     break;
 
