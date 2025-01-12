@@ -63,7 +63,7 @@ async function createTransparentCard(track) {
 
     // Carregar a imagem da miniatura
     const thumbnail = await loadImage(track.info.thumbnail);
-    ctx.drawImage(thumbnail, 20, 20, 160, 160); // Posição e tamanho da miniatura
+    ctx.drawImage(thumbnail, 30, 30, 160, 160); // Posição e tamanho da miniatura
 
     // Título da música
     ctx.font = 'bold 30px "AfacadFlux-Regular"';
@@ -78,7 +78,7 @@ async function createTransparentCard(track) {
     // Solicitante
     ctx.font = '20px "AfacadFlux-Regular"';
     ctx.fillStyle = '#AAAAAA';
-    ctx.fillText(`Requested by ${track.info.requester || "@All In One"}`, 200, 140);
+    ctx.fillText(`Requested by ${track.info.requester || "@Next AI"}`, 200, 140);
 
     return canvas.toBuffer(); // Retorna a imagem como buffer
 }
