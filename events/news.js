@@ -1,6 +1,7 @@
 const { EmbedBuilder } = require('discord.js');
 const axios = require('axios');
 const { MongoClient } = require('mongodb');
+const { URL } = require('url'); // Módulo para manipulação de URLs
 
 // URI do MongoDB
 const MONGO_URI = 'mongodb+srv://RTX:GAMING@cluster0.iuzzl.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
@@ -9,14 +10,6 @@ const COLLECTION_NAME = 'sentArticles';
 
 // ID do canal onde as notícias serão enviadas
 const CHANNEL_ID = '1309897299278696618';
-
-// Thumbnails específicas por tema
-const THUMBNAILS = {
-    android: 'URL_THUMBNAIL_ANDROID',
-    ios: 'URL_THUMBNAIL_IOS',
-    windows: 'URL_THUMBNAIL_WINDOWS',
-    chromebook: 'URL_THUMBNAIL_CHROMEBOOK',
-};
 
 const TOPICS = ['android', 'ios', 'windows', 'chromebook'];
 let ultimoTopico = null; // Variável para rastrear o último tópico enviado
@@ -58,6 +51,16 @@ async function buscarNoticias(topico) {
     }
 }
 
+function getFavicon(url) {
+    try {
+        const parsedUrl = new URL(url);
+        return `${parsedUrl.origin}/favicon.ico`;
+    } catch (error) {
+        console.error('Erro ao gerar favicon URL:', error.message);
+        return 'https://via.placeholder.com/50'; // URL padrão em caso de falha
+    }
+}
+
 async function enviarNoticias(client, collection) {
     const canal = client.channels.cache.get(CHANNEL_ID);
 
@@ -87,7 +90,7 @@ async function enviarNoticias(client, collection) {
                 .setTitle(noticia.title)
                 .setURL(noticia.url)
                 .setDescription(noticia.description || 'Sem descrição disponível.')
-                .setThumbnail(THUMBNAILS[topico] || 'https://via.placeholder.com/50')
+                .setThumbnail(getFavicon(noticia.url))
                 .setImage(noticia.urlToImage || 'https://via.placeholder.com/300')
                 .addFields(
                     { name: 'Fonte', value: `[${noticia.source.name}](${noticia.url})`, inline: true },
