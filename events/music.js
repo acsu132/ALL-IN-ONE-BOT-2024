@@ -93,9 +93,10 @@ const attachment = new AttachmentBuilder(cardBuffer, {
 
 
 
-                const attachment = new AttachmentBuilder(cardImage, {
-                    name: 'songcard.png',
-                });
+                const cardAttachment = new AttachmentBuilder(cardBuffer, {
+    name: 'songcard.png',
+});
+
 
                 // Sending an embed with the song details and card image
                 const embed = new EmbedBuilder()
