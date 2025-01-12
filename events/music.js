@@ -53,12 +53,14 @@ module.exports = (client) => {
 
                 // Creating song card with songcard package
                 const cardImage = await dynamicCard({
-                    thumbnailURL: track.info.thumbnail,
-                    songTitle: track.info.title,
-                    songArtist: track.info.author,
-                    trackRequester: "@All In One", // Displaying the username of who requested the song
-                    fontPath: path.join(__dirname, "../UI", "fonts", "AfacadFlux-Regular.ttf"), // Your custom font
-                });
+    thumbnailURL: track.info.thumbnail,
+    songTitle: track.info.title,
+    songArtist: track.info.author,
+    trackRequester: "@All In One",
+    fontPath: path.join(__dirname, "../UI", "fonts", "AfacadFlux-Regular.ttf"),
+    backgroundColor: "rgba(0, 0, 0, 0)", // Define o fundo como transparente
+});
+
 
                 const attachment = new AttachmentBuilder(cardImage, {
                     name: 'songcard.png',
