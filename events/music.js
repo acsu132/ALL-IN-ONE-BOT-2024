@@ -52,14 +52,45 @@ module.exports = (client) => {
                 }
 
                 // Creating song card with songcard package
-                const cardImage = await dynamicCard({
-    thumbnailURL: track.info.thumbnail,
-    songTitle: track.info.title,
-    songArtist: track.info.author,
-    trackRequester: "@All In One",
-    fontPath: path.join(__dirname, "../UI", "fonts", "AfacadFlux-Regular.ttf"),
-    backgroundColor: "rgba(0, 0, 0, 0)", // Define o fundo como transparente
+                const { createCanvas, loadImage } = require('canvas');
+
+async function createTransparentCard(track) {
+    const canvas = createCanvas(800, 400); // Tamanho do card
+    const ctx = canvas.getContext('2d');
+
+    // Fundo transparente
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Carregar a imagem da miniatura
+    const thumbnail = await loadImage(track.info.thumbnail);
+    ctx.drawImage(thumbnail, 20, 20, 160, 160); // Posição e tamanho da miniatura
+
+    // Título da música
+    ctx.font = 'bold 30px "AfacadFlux-Regular"';
+    ctx.fillStyle = '#FFFFFF'; // Cor do texto
+    ctx.fillText(track.info.title, 200, 60);
+
+    // Artista da música
+    ctx.font = '25px "AfacadFlux-Regular"';
+    ctx.fillStyle = '#AAAAAA';
+    ctx.fillText(`by ${track.info.author}`, 200, 100);
+
+    // Solicitante
+    ctx.font = '20px "AfacadFlux-Regular"';
+    ctx.fillStyle = '#AAAAAA';
+    ctx.fillText(`Requested by ${track.info.requester || "@All In One"}`, 200, 140);
+
+    return canvas.toBuffer(); // Retorna a imagem como buffer
+}
+
+// Usar a função para criar o card
+const cardBuffer = await createTransparentCard(track);
+
+// Cria o attachment com o buffer
+const attachment = new AttachmentBuilder(cardBuffer, {
+    name: 'songcard.png',
 });
+
 
 
                 const attachment = new AttachmentBuilder(cardImage, {
