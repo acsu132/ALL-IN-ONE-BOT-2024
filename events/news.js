@@ -12,13 +12,14 @@ const CHANNEL_ID = '1309897299278696618';
 
 // Thumbnails específicas por tema
 const THUMBNAILS = {
-    android: 'https://media.discordapp.net/attachments/1284876311516680282/1327784334186254336/image.png?ex=67845306&is=67830186&hm=47894ac9c5bf7a6d9c6593d6c709e20fa9fff8f936902c00d6fc2d557e74b014&=&width=398&height=398',
-    ios: 'https://media.discordapp.net/attachments/1284876311516680282/1327783786779250708/image.png?ex=67845283&is=67830103&hm=e68d14e9eb577f15a1315c46f9b1aad6c7454805eb7a3ccaf34cace54ac13a49&=&width=324&height=398',
-    windows: 'https://media.discordapp.net/attachments/1284876311516680282/1327782854251511939/image.png?ex=678451a5&is=67830025&hm=d89263e7ff2f5d9e0a982f5fcd89d22cf1aa8a019c22d4d2d7e11c1e6b1adc0f&=&width=398&height=398',
-    chromebook: 'https://media.discordapp.net/attachments/1284876311516680282/1327783278689914952/image.png?ex=6784520a&is=6783008a&hm=f1257fa500a255ee31023bace0ad194b5773d56895600ca236407539ebf3c486&=&width=398&height=398',
+    android: 'URL_THUMBNAIL_ANDROID',
+    ios: 'URL_THUMBNAIL_IOS',
+    windows: 'URL_THUMBNAIL_WINDOWS',
+    chromebook: 'URL_THUMBNAIL_CHROMEBOOK',
 };
 
 const TOPICS = ['android', 'ios', 'windows', 'chromebook'];
+let ultimoTopico = null; // Variável para rastrear o último tópico enviado
 
 module.exports = {
     init: (client) => {
@@ -67,7 +68,10 @@ async function enviarNoticias(client, collection) {
 
     let noticiaEnviada = false;
 
-    for (const topico of TOPICS) {
+    // Reordena os tópicos para evitar repetições do último tópico
+    const topicosOrdenados = TOPICS.filter(topico => topico !== ultimoTopico).concat(ultimoTopico ? [ultimoTopico] : []);
+
+    for (const topico of topicosOrdenados) {
         const noticias = await buscarNoticias(topico);
 
         for (const noticia of noticias) {
@@ -93,6 +97,7 @@ async function enviarNoticias(client, collection) {
 
             await canal.send({ embeds: [embed] });
             noticiaEnviada = true;
+            ultimoTopico = topico; // Atualiza o último tópico enviado
             break; // Envia apenas uma notícia por vez
         }
 
@@ -102,7 +107,7 @@ async function enviarNoticias(client, collection) {
     }
 
     if (!noticiaEnviada) {
-        console.log('Nenhuma nova notícia foi encontrada para nenhum tópico.');
-        await canal.send('Nenhuma notícia nova encontrada para os tópicos disponíveis.');
+        console.log('Nenhuma nova notícia foi encontrada para tópicos diferentes do último enviado.');
+        // O bot não enviará nada neste caso
     }
 }
