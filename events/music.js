@@ -185,17 +185,17 @@ const attachment = new AttachmentBuilder(cardBuffer, {
 
                 case 'stop':
                     player.destroy(); 
-                    interaction.reply({ content: 'A música eu parei e desconectei, yeah!.', ephemeral: true });
+                    interaction.reply({ content: 'Parei a música e desconectei do canal de voz.', ephemeral: true });
                     break;
 
                 case 'clear_queue':
                     player.queue.clear();
-                    interaction.reply({ content: 'Queue cleared.', ephemeral: true });
+                    interaction.reply({ content: 'Comi a fila, estava deliciosa.', ephemeral: true });
                     break;
 
                 case 'show_queue':
                     if (!player || !player.queue.length) {
-                        return interaction.reply({ content: 'The queue is empty.', ephemeral: true });
+                        return interaction.reply({ content: 'A fila está vazia.', ephemeral: true });
                     }
                     const queueEmbed = new EmbedBuilder()
                         .setTitle('Aqui estão as músicas da fila:')
