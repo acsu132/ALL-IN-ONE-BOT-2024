@@ -7,25 +7,44 @@ module.exports = {
     name: 'lfartag',
     description: 'Busca por um artista no repositório.',
     execute: async (message, args) => {
-        const artistName = args.join(' ');
+        const artistQuery = args.join(' ').toLowerCase(); // Converte para minúsculas para busca insensível a maiúsculas/minúsculas
         const owner = 'acsu132'; // Substitua pelo dono do repositório
         const repo = 'ProjectTag'; // Substitua pelo nome do repositório
         const githubToken = process.env.GITHUB_TOKEN;
+        const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/Artists`;
 
-        const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/Artists/${encodeURIComponent(artistName)}`;
         try {
-            const { data } = await axios.get(apiUrl, {
+            // Busca todos os artistas
+            const { data: artists } = await axios.get(apiUrl, {
                 headers: { Authorization: `token ${githubToken}` },
             });
 
-            if (!Array.isArray(data)) {
-                message.reply('Artista não encontrado.');
+            if (!Array.isArray(artists)) {
+                message.reply('Erro ao acessar a lista de artistas.');
                 return;
             }
 
-            // Procura o arquivo de descrição e miniatura
-            const descriptionFile = data.find(file => file.name === 'artistdesc.txt');
-            const thumbnailFile = data.find(file => file.name === 'artistpfp.png');
+            // Encontra o artista mais próximo
+            const matchingArtist = artists.find(artist =>
+                artist.name.toLowerCase().includes(artistQuery)
+            );
+
+            if (!matchingArtist) {
+                message.reply('Nenhum artista encontrado correspondente à busca.');
+                return;
+            }
+
+            const artistName = matchingArtist.name; // Nome real do artista
+            const artistPath = matchingArtist.path;
+
+            // Busca os álbuns e arquivos do artista
+            const { data: artistContents } = await axios.get(`https://api.github.com/repos/${owner}/${repo}/contents/${artistPath}`, {
+                headers: { Authorization: `token ${githubToken}` },
+            });
+
+            // Procura por descrição e miniatura
+            const descriptionFile = artistContents.find(file => file.name === 'artistdesc.txt');
+            const thumbnailFile = artistContents.find(file => file.name === 'artistpfp.png');
 
             let description = 'Descrição não disponível.';
             let thumbnailUrl = null;
@@ -39,23 +58,32 @@ module.exports = {
                 thumbnailUrl = thumbnailFile.download_url;
             }
 
-            // Filtra apenas pastas e arquivos de músicas
-            const filesToDownload = data.filter(file => file.type === 'file' && file.name !== 'artistdesc.txt' && file.name !== 'artistpfp.png');
+            // Filtra as pastas de álbuns
+            const albumFolders = artistContents.filter(item => item.type === 'dir');
 
-            if (filesToDownload.length === 0) {
-                message.reply('Nenhum arquivo encontrado para esse artista.');
+            if (albumFolders.length === 0) {
+                message.reply('Nenhum álbum encontrado para este artista.');
                 return;
             }
 
-            // Cria uma pasta temporária para os arquivos
+            // Cria uma pasta temporária
             const tempFolder = `./temp/${artistName}`;
             fs.mkdirSync(tempFolder, { recursive: true });
 
-            // Baixa os arquivos
-            for (const file of filesToDownload) {
-                const fileResponse = await axios.get(file.download_url, { responseType: 'arraybuffer' });
-                const filePath = path.join(tempFolder, file.name);
-                fs.writeFileSync(filePath, fileResponse.data);
+            // Baixa arquivos de cada álbum
+            for (const album of albumFolders) {
+                const { data: albumContents } = await axios.get(album.url, {
+                    headers: { Authorization: `token ${githubToken}` },
+                });
+
+                const albumFolder = path.join(tempFolder, album.name);
+                fs.mkdirSync(albumFolder, { recursive: true });
+
+                for (const file of albumContents.filter(file => /\.(mp3|wav|m4a|ogg)$/i.test(file.name))) {
+                    const fileResponse = await axios.get(file.download_url, { responseType: 'arraybuffer' });
+                    const filePath = path.join(albumFolder, file.name);
+                    fs.writeFileSync(filePath, fileResponse.data);
+                }
             }
 
             // Cria o arquivo ZIP
@@ -64,15 +92,11 @@ module.exports = {
             const zipPath = `./temp/${artistName}.zip`;
             zip.writeZip(zipPath);
 
-            // Envia o embed e o arquivo ZIP
+            // Cria o embed com as informações do artista
             const embed = {
                 title: `Músicas de ${artistName}`,
                 description: description,
                 thumbnail: thumbnailUrl ? { url: thumbnailUrl } : undefined,
-                fields: filesToDownload.map(file => ({
-                    name: 'Álbum/Pasta',
-                    value: `[Baixar](${file.html_url})`,
-                })),
                 color: 0x00ff00,
             };
 
