@@ -52,36 +52,58 @@ module.exports = (client) => {
                 }
 
                 // Creating song card with songcard package
-                const { createCanvas, loadImage } = require('canvas');
+               const { createCanvas, loadImage } = require('canvas');
 
 async function createTransparentCard(track) {
-    const canvas = createCanvas(800, 400); // Tamanho do card
+    const canvas = createCanvas(900, 500); // Ajuste do tamanho do card
     const ctx = canvas.getContext('2d');
 
     // Fundo transparente
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Carregar a imagem da miniatura
+    // Desenhar a miniatura com bordas arredondadas
     const thumbnail = await loadImage(track.info.thumbnail);
-    ctx.drawImage(thumbnail, 30, 30, 160, 160); // Posição e tamanho da miniatura
+    const thumbnailX = 20;
+    const thumbnailY = 50;
+    const thumbnailWidth = 180;
+    const thumbnailHeight = 180;
+    const borderRadius = 20;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(thumbnailX + borderRadius, thumbnailY);
+    ctx.lineTo(thumbnailX + thumbnailWidth - borderRadius, thumbnailY);
+    ctx.quadraticCurveTo(thumbnailX + thumbnailWidth, thumbnailY, thumbnailX + thumbnailWidth, thumbnailY + borderRadius);
+    ctx.lineTo(thumbnailX + thumbnailWidth, thumbnailY + thumbnailHeight - borderRadius);
+    ctx.quadraticCurveTo(thumbnailX + thumbnailWidth, thumbnailY + thumbnailHeight, thumbnailX + thumbnailWidth - borderRadius, thumbnailY + thumbnailHeight);
+    ctx.lineTo(thumbnailX + borderRadius, thumbnailY + thumbnailHeight);
+    ctx.quadraticCurveTo(thumbnailX, thumbnailY + thumbnailHeight, thumbnailX, thumbnailY + thumbnailHeight - borderRadius);
+    ctx.lineTo(thumbnailX, thumbnailY + borderRadius);
+    ctx.quadraticCurveTo(thumbnailX, thumbnailY, thumbnailX + borderRadius, thumbnailY);
+    ctx.closePath();
+    ctx.clip();
+
+    ctx.drawImage(thumbnail, thumbnailX, thumbnailY, thumbnailWidth, thumbnailHeight);
+    ctx.restore();
 
     // Título da música
-    ctx.font = 'bold 30px "AfacadFlux-Regular"';
-    ctx.fillStyle = '#FFFFFF'; // Cor do texto
-    ctx.fillText(track.info.title, 200, 60);
+    ctx.font = 'bold 40px "AfacadFlux-Regular"';
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillText(track.info.title, 220, 100); // Reposicionado
 
     // Artista da música
-    ctx.font = '25px "AfacadFlux-Regular"';
+    ctx.font = '30px "AfacadFlux-Regular"';
     ctx.fillStyle = '#AAAAAA';
-    ctx.fillText(`by ${track.info.author}`, 200, 100);
+    ctx.fillText(`by ${track.info.author}`, 220, 150); // Reposicionado
 
     // Solicitante
-    ctx.font = '20px "AfacadFlux-Regular"';
+    ctx.font = '25px "AfacadFlux-Regular"';
     ctx.fillStyle = '#AAAAAA';
-    ctx.fillText(`Requested by ${track.info.requester || "@Next AI"}`, 200, 140);
+    ctx.fillText(`Requested by ${track.info.requester || "@All In One"}`, 220, 200); // Reposicionado
 
     return canvas.toBuffer(); // Retorna a imagem como buffer
 }
+
 
 // Usar a função para criar o card
 const cardBuffer = await createTransparentCard(track);
