@@ -6,10 +6,10 @@ module.exports = {
     execute(client) {
   
         const activities = [
-            { name: 'LineageOs', type: ActivityType.Watching },
-            { name: 'Pixel Experience', type: ActivityType.Playing },
-            { name: 'AOSP', type: ActivityType.Streaming },
-            { name: 'OneUI', type: ActivityType.Listening },
+            { name: 'Use $help', type: ActivityType.Streaming },
+            { name: 'Android', type: ActivityType.Streaming },
+            { name: 'TWRP', type: ActivityType.Streaming },
+            { name: 'FydeOS', type: ActivityType.Streaming },
         ];
 
      
