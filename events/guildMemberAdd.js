@@ -64,7 +64,7 @@ module.exports = async (client) => {
                     .setName(userName)
                     .setAvatar(member.user.displayAvatarURL({ format: 'png' }))
                     .setTitle("Bem-vindo!")
-                    .setColor("#9000ff") 
+                    .setColor("#951cff") 
                     .setBackground(randomImage);
                 
                 const card = await welcomecard.build();
