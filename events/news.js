@@ -86,7 +86,7 @@ async function enviarNoticias(client, collection) {
             await collection.insertOne({ url: noticia.url }); // Salva a URL no banco de dados
 
             const embed = new EmbedBuilder()
-                .setColor('#1D3557')
+                .setColor('#8a22d4')
                 .setTitle(noticia.title)
                 .setURL(noticia.url)
                 .setDescription(noticia.description || 'Sem descrição disponível.')
