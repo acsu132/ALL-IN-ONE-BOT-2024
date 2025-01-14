@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
-const fetch = require('node-fetch');
+const axios = require('axios');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -12,16 +12,11 @@ module.exports = {
 
     try {
       // Faz a requisição para obter os dados do repositório
-      const response = await fetch(repoUrl, {
+      const response = await axios.get(repoUrl, {
         headers: { Authorization: `token ${githubToken}` },
       });
 
-      if (!response.ok) {
-        return interaction.reply({ content: 'Erro ao acessar o repositório do GitHub.', ephemeral: true });
-      }
-
-      // Parse dos dados em JSON
-      const data = await response.json();
+      const data = response.data;
       const devices = Object.keys(data); // Lista de dispositivos (chaves do JSON)
 
       if (devices.length === 0) {
