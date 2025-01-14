@@ -4,17 +4,17 @@ require('dotenv').config();
 const { MongoClient } = require('mongodb');
 const { setInterval } = require('timers');
 
-// Lista de IDs dos canais do YouTube, põe tudo aqui
+// All the channel id's should be here with an , at the end, you can add how many you want but the first time it will send 3 of them
 const CHANNEL_IDS = [
     'UC_bXJnsgwOqEPA_-6N6faKw',
 'UC7zbUfFoMAMGHIRUE8gjVnw',
 'UC9_zUso3liGdwEnVyHm90sw',
 ];
 
-// ID do canal do Discord onde as notificações serão enviadas
+// Put the channel id here (for the videos), yes the bot will send the videos here
 const DISCORD_CHANNEL_ID = '1317627872814432286';
 
-// Configurações do MongoDB
+// Creates a mongodb storage
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017';
 const DATABASE_NAME = 'youtubeNotifications';
 const COLLECTION_NAME = 'sentVideos';
@@ -24,16 +24,14 @@ module.exports = {
         client.on('ready', async () => {
             console.log('Módulo de notificações do YouTube inicializado.');
 
-            // Conecta ao MongoDB e cria a coleção se necessário
             const mongoClient = new MongoClient(MONGO_URI);
             await mongoClient.connect();
             const db = mongoClient.db(DATABASE_NAME);
             const collection = db.collection(COLLECTION_NAME);
 
-            // Certifica-se de que o índice para IDs de vídeo é único
             await collection.createIndex({ videoId: 1 }, { unique: true });
 
-            // Intervalo para verificar atualizações a cada 1 minuto
+            // This is the interval for the bot check if there are new videos for the channel(s), default is 1 minute
             setInterval(() => verificarAtualizacoes(client, collection), 1 * 60 * 1000);
         });
     },
@@ -56,7 +54,7 @@ async function verificarAtualizacoes(client, collection) {
                     order: 'date',
                     maxResults: 1,
                     type: 'video',
-                    key: process.env.YOUTUBE_API_KEY, // Carregando a chave da API do arquivo .env
+                    key: process.env.YOUTUBE_API_KEY, //put your youtube api key on env with this variable
                 },
             });
 
@@ -65,7 +63,7 @@ async function verificarAtualizacoes(client, collection) {
             for (const video of videos) {
                 const videoId = video.id.videoId;
 
-                // Verifica se o vídeo já foi enviado usando o MongoDB
+                // That checks iv the video was already been sent
                 const exists = await collection.findOne({ videoId });
                 if (exists) {
                     console.log(`Vídeo já enviado: ${videoId}`);
@@ -75,7 +73,7 @@ async function verificarAtualizacoes(client, collection) {
                 const embed = criarEmbedNotificacao(video);
                 await discordChannel.send({ embeds: [embed] });
 
-                // Armazena o vídeo no banco de dados
+                
                 await collection.insertOne({ videoId, sentAt: new Date() });
             }
         } catch (error) {
@@ -92,11 +90,26 @@ function criarEmbedNotificacao(video) {
         .setTitle(title)
         .setURL(`https://www.youtube.com/watch?v=${video.id.videoId}`)
         .setDescription(description || 'Sem descrição disponível.')
-        .setImage(thumbnails.high.url) // Usa a capa do vídeo como imagem principal
-        .setAuthor({ name: channelTitle, iconURL: thumbnails.default.url }) // Usa a foto do canal como ícone do autor
+        .setImage(thumbnails.high.url) 
+        .setAuthor({ name: channelTitle, iconURL: thumbnails.default.url }) 
         .setFooter({ text: 'Nova atualização do YouTube!' })
         .addFields(
             { name: 'Publicado em', value: new Date(publishedAt).toLocaleString(), inline: true },
             { name: 'Canal', value: channelTitle, inline: true }
         );
 }
+
+
+// ███╗░░░███╗░█████╗░██████╗░██╗░░░██╗██╗░░░░░███████╗  ██████╗░██╗░░░██╗
+// ████╗░████║██╔══██╗██╔══██╗██║░░░██║██║░░░░░██╔════╝  ██╔══██╗╚██╗░██╔╝
+// ██╔████╔██║██║░░██║██║░░██║██║░░░██║██║░░░░░█████╗░░  ██████╦╝░╚████╔╝░
+// ██║╚██╔╝██║██║░░██║██║░░██║██║░░░██║██║░░░░░██╔══╝░░  ██╔══██╗░░╚██╔╝░░
+// ██║░╚═╝░██║╚█████╔╝██████╔╝╚██████╔╝███████╗███████╗  ██████╦╝░░░██║░░░
+// ╚═╝░░░░░╚═╝░╚════╝░╚═════╝░░╚═════╝░╚══════╝╚══════╝  ╚═════╝░░░░╚═╝░░░
+
+// ░█████╗░██████╗░██████╗░██╗███████╗██╗░░░░░
+// ██╔══██╗██╔══██╗██╔══██╗██║██╔════╝██║░░░░░
+// ███████║██║░░██║██████╔╝██║█████╗░░██║░░░░░
+// ██╔══██║██║░░██║██╔══██╗██║██╔══╝░░██║░░░░░
+// ██║░░██║██████╔╝██║░░██║██║███████╗███████╗
+// ╚═╝░░╚═╝╚═════╝░╚═╝░░╚═╝╚═╝╚══════╝╚══════╝
