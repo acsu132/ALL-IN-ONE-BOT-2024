@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
 const axios = require('axios');
+const cheerio = require('cheerio');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -7,17 +8,26 @@ module.exports = {
     .setDescription('Exibe uma lista de GSIs disponíveis.'),
 
   async execute(interaction) {
-    const githubToken = process.env.GITHUB_TOKEN;
-    const repoUrl = 'https://api.github.com/repos/phhusson/treble_experimentations/wiki/Generic-System-Image-(GSI)-list';
+    const wikiUrl = 'https://github.com/phhusson/treble_experimentations/wiki/Generic-System-Image-(GSI)-list';
 
     try {
-      // Faz a requisição para obter os dados do repositório
-      const response = await axios.get(repoUrl, {
-        headers: { Authorization: `token ${githubToken}` },
-      });
+      // Faz a requisição para obter o HTML da página da wiki
+      const response = await axios.get(wikiUrl);
+      const html = response.data;
 
-      const data = response.data;
-      const devices = Object.keys(data); // Lista de dispositivos (chaves do JSON)
+      // Usa o cheerio para processar o HTML
+      const $ = cheerio.load(html);
+      const devices = [];
+
+      // Procura por dispositivos na página (ajuste o seletor conforme a estrutura da página)
+      $('ul li a').each((index, element) => {
+        const deviceName = $(element).text().trim();
+        const deviceLink = $(element).attr('href');
+
+        if (deviceName && deviceLink) {
+          devices.push({ name: deviceName, link: `https://github.com${deviceLink}` });
+        }
+      });
 
       if (devices.length === 0) {
         return interaction.reply({ content: 'Nenhum dispositivo encontrado.', ephemeral: true });
@@ -29,8 +39,8 @@ module.exports = {
         .setPlaceholder('Selecione um dispositivo')
         .addOptions(
           devices.map(device => ({
-            label: device,
-            value: device,
+            label: device.name,
+            value: device.link,
           }))
         );
 
@@ -51,13 +61,12 @@ module.exports = {
 
       collector.on('collect', async i => {
         if (i.customId === 'select-gsi') {
-          const selectedDevice = i.values[0];
-          const deviceInfo = data[selectedDevice]; // Informações do dispositivo
+          const selectedLink = i.values[0];
 
-          // Embed com as informações do dispositivo selecionado
+          // Embed com o link para o dispositivo selecionado
           const embed = new EmbedBuilder()
-            .setTitle(`Informações do Dispositivo: ${selectedDevice}`)
-            .setDescription(deviceInfo)
+            .setTitle('Informações do Dispositivo')
+            .setDescription(`Clique [aqui](${selectedLink}) para acessar as informações completas do dispositivo.`)
             .setColor('#0099ff');
 
           await i.reply({ embeds: [embed], ephemeral: true });
@@ -75,3 +84,5 @@ module.exports = {
     }
   },
 };
+
+      
