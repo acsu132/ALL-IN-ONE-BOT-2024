@@ -4,9 +4,11 @@ require('dotenv').config();
 const { MongoClient } = require('mongodb');
 const { setInterval } = require('timers');
 
-// Lista de IDs dos canais do YouTube
+// Lista de IDs dos canais do YouTube, põe tudo aqui
 const CHANNEL_IDS = [
-    'UC_x5XG1OV2P6uZZ5FSM9Ttw', // Exemplo de ID de canal
+    'UC_bXJnsgwOqEPA_-6N6faKw',
+'UC7zbUfFoMAMGHIRUE8gjVnw',
+'UC9_zUso3liGdwEnVyHm90sw',
 ];
 
 // ID do canal do Discord onde as notificações serão enviadas
