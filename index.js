@@ -28,7 +28,10 @@ const loadEventHandlers = () => {
     emojiHandler(client);
     require('./events/music')(client);
     require('./shiva');
-};
 
+    console.log('\x1b[36m[ YOUTUBE NOTIFICATIONS ]\x1b[0m', '\x1b[32mYouTube Notifications Active ✅\x1b[0m');
+    const youtubeNotificationsHandler = require('./events/youtubeNotifications'); // Substitua pelo caminho correto
+    youtubeNotificationsHandler.init(client);
+};
 
 loadEventHandlers();
