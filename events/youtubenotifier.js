@@ -3,20 +3,24 @@ const axios = require('axios');
 require('dotenv').config();
 const { setInterval } = require('timers');
 
-// Lista de IDs dos canais do YouTube
+// Lista dos ids dos canais, ponha todos os canais que quiser aqui, para achar o ID você pode usar algum "Youtube channel id finder", basta por o id entre as 'aspas' e termin
 const CHANNEL_IDS = [
-    'UC_bXJnsgwOqEPA_-6N6faKw', // Exemplo de ID de canal, // Adicione outros IDs aqui
+    'UC_x5XG1OV2P6uZZ5FSM9Ttw',
+    'UCJZv4d5rbIKd4QHMPkcABCw',
 ];
 
-// ID do canal do Discord onde as notificações serão enviadas
-const DISCORD_CHANNEL_ID = '1309897299278696618';
+// ID do canal onde as notificações vão
+const DISCORD_CHANNEL_ID = '1317627872814432286';
+
+// 
+const sentVideos = new Set();
 
 module.exports = {
     init: (client) => {
         client.on('ready', async () => {
             console.log('Módulo de notificações do YouTube inicializado.');
 
-            // Intervalo para verificar atualizações a cada 10 minutos
+            // Intervalo pro bot não mandar a cada 1s
             setInterval(() => verificarAtualizacoes(client), 10 * 60 * 1000);
         });
     },
@@ -39,15 +43,24 @@ async function verificarAtualizacoes(client) {
                     order: 'date',
                     maxResults: 1,
                     type: 'video',
-                    key: process.env.YOUTUBE_API_KEY, // Carregando a chave da API do arquivo .env
+                    key: process.env.YOUTUBE_API_KEY, // Coloca a chave da api no env, não põe no repositório pelo amor de deus
                 },
             });
 
             const videos = response.data.items;
 
             for (const video of videos) {
+                const videoId = video.id.videoId;
+
+                if (sentVideos.has(videoId)) {
+                    console.log(`Vídeo já enviado: ${videoId}`);
+                    continue;
+                }
+
                 const embed = criarEmbedNotificacao(video);
                 await discordChannel.send({ embeds: [embed] });
+
+                sentVideos.add(videoId);
             }
         } catch (error) {
             console.error(`Erro ao buscar atualizações para o canal ${channelId}:`, error.message);
@@ -63,9 +76,9 @@ function criarEmbedNotificacao(video) {
         .setTitle(title)
         .setURL(`https://www.youtube.com/watch?v=${video.id.videoId}`)
         .setDescription(description || 'Sem descrição disponível.')
-        .setThumbnail(thumbnails.high.url)
-        .setAuthor({ name: channelTitle, iconURL: thumbnails.default.url })
-        .setFooter({ text: 'Nova atualização do YouTube!' })
+        .setImage(thumbnails.high.url) // Usa a capa do vídeo como imagem principal
+        .setAuthor({ name: channelTitle, iconURL: thumbnails.default.url }) // Usa a foto do canal como ícone do autor
+        .setFooter({ text: 'Novo vídeo do youtube!' })
         .addFields(
             { name: 'Publicado em', value: new Date(publishedAt).toLocaleString(), inline: true },
             { name: 'Canal', value: channelTitle, inline: true }
