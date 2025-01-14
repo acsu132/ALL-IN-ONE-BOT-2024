@@ -64,7 +64,7 @@ module.exports = async (client) => {
                     .setName(userName)
                     .setAvatar(member.user.displayAvatarURL({ format: 'png' }))
                     .setTitle("Bem-vindo!")
-                    .setColor("#951cff") 
+                    .setColor("#8b10e3") 
                     .setBackground(randomImage);
                 
                 const card = await welcomecard.build();
@@ -73,7 +73,7 @@ module.exports = async (client) => {
                 const embed = new EmbedBuilder()
                     .setTitle("Bem-vindo ao servidor!")
                     .setDescription(`${member}! Você é o **${memberCount}${suffix}** membro do nosso servidor!`)
-                    .setColor("#9000ff")
+                    .setColor("#8b10e3")
                     .setThumbnail(member.user.displayAvatarURL())
                     .setImage('attachment://welcome.png')
                     .addFields(
