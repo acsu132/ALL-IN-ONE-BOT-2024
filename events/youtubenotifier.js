@@ -21,7 +21,7 @@ module.exports = {
             console.log('Módulo de notificações do YouTube inicializado.');
 
             // Intervalo pro bot não mandar a cada 1s
-            setInterval(() => verificarAtualizacoes(client), 10 * 60 * 1000);
+            setInterval(() => verificarAtualizacoes(client), 1 * 60 * 1000);
         });
     },
 };
