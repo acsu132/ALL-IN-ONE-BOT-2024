@@ -4,7 +4,7 @@ require('dotenv').config();
 const { MongoClient } = require('mongodb');
 const { setInterval } = require('timers');
 
-// All the channel id's should be here with an , at the end, you can add how many you want but the first time it will send 3 of them
+// All the channel id's should be here with an , at the end, you can add how many you want but the first time it will send 3 of them, more channels, more api calls
 const CHANNEL_IDS = [
     'UC_bXJnsgwOqEPA_-6N6faKw',
 'UC7zbUfFoMAMGHIRUE8gjVnw',
