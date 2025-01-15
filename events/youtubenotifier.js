@@ -32,7 +32,7 @@ module.exports = {
             await collection.createIndex({ videoId: 1 }, { unique: true });
 
             // This is the interval for the bot check if there are new videos for the channel(s), default is 10 minutes, do not put a small value or api will be limit rated
-            setInterval(() => verificarAtualizacoes(client, collection), 10 * 60 * 1000);
+            setInterval(() => verificarAtualizacoes(client, collection), 30 * 60 * 1000);
         });
     },
 };
