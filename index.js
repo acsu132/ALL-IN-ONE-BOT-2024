@@ -48,6 +48,10 @@ const loadEventHandlers = () => {
     console.log(`\n${colors.magenta}${colors.bright}🎮 ENGAGEMENT SYSTEMS${colors.reset}`);
     console.log('─'.repeat(40));
 
+    // Custom Events
+ const newsHandler = require('./events/news');
+ const stickynotesHandler = require('./events/stickynotes');
+
     // Giveaway System
     const giveawayHandler = require('./events/giveaway');
     giveawayHandler(client);
