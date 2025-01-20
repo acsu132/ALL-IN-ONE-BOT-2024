@@ -198,7 +198,7 @@ skipErrorMessage: 'Ocorreu um erro ao tentar pular a música.',
 // stop.js
 stopDescription: 'Pare a fila atual e saia do canal de voz',
 stopNoVoiceChannel: '**Você precisa estar em um canal de voz para parar a música!**',
-stopNoPermissions: **Preciso de permissões para entrar e spico no seu canal de voz!**',
+stopNoPermissions: '**Preciso de permissões para entrar e spico no seu canal de voz!**',
 stopInProgress: '**Parando a fila!**',
 stopSuccessTitle: 'Parado!',
 stopSuccessMessage: '**A fila foi parada**',
