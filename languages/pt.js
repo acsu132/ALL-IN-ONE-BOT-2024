@@ -725,4 +725,4 @@ kstFieldName: ':flag_kr: Seul (KST)',
 worldClockErrorMessage: 'Ocorreu um erro ao recuperar os dados do relógio mundial.',
 };
 
-módulo.exports = ptLang;
+module.exports = ptLang;
