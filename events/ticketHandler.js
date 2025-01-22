@@ -61,22 +61,23 @@ async function monitorConfigChanges(client) {
                             iconURL: ticketIcons.mainIcon,
                             url: "https://discord.gg/xQF9f9yUEM"
                         })
-                        .setDescription('- Please click below menu to create a new ticket.\n\n' +
-                            '**Ticket Guidelines:**\n' +
-                            '- Empty tickets are not permitted.\n' +
-                            '- Please be patient while waiting for a response from our support team.')
-                        .setFooter({ text: 'We are here to Help!', iconURL: ticketIcons.modIcon })
+                        .setDescription('- Escolha uma opção no menu para criar um ticket.\n\n' +
+                            '**Regras nos tickets:**\n' +
+                            '- Tickets vazios não são permitidos.\n' +
+                            '- Por favor, seja paciente, você receberá uma resposta o mais rápido possível.')
+                        .setFooter({ text: 'Estamos aqui para ajudar!', iconURL: ticketIcons.modIcon })
                         .setColor('#00FF00')
                         .setTimestamp();
+                    .setImage('https://media.discordapp.net/attachments/1284876311516680282/1331623009370378372/125_Sem_Titulo_20250122105359.png?ex=67924a11&is=6790f891&hm=f51bed7a396f2abc18e645b0efe5080e3dd3db92be469c997ae079dc75f9f0a4&=&width=743&height=397')
 
                     const menu = new StringSelectMenuBuilder()
                         .setCustomId('select_ticket_type')
                         .setPlaceholder('Choose ticket type')
                         .addOptions([
-                            { label: '🆘 Support', value: 'support' },
-                            { label: '📂 Suggestion', value: 'suggestion' },
+                            { label: '🆘 Suporte', value: 'support' },
+                            { label: '📂 Sugestão', value: 'suggestion' },
                             { label: '💜 Feedback', value: 'feedback' },
-                            { label: '⚠️ Report', value: 'report' }
+                            { label: '⚠️ Denunciar', value: 'report' }
                         ]);
 
                     const row = new ActionRowBuilder().addComponents(menu);
@@ -107,7 +108,7 @@ async function handleSelectMenu(interaction, client) {
 
     const ticketExists = await ticketsCollection.findOne({ guildId, userId });
     if (ticketExists) {
-        return interaction.followUp({ content: 'You already have an open ticket.', ephemeral: true });
+        return interaction.followUp({ content: 'Você já tem um ticket aberto.', ephemeral: true });
     }
 
     const ticketChannel = await guild.channels.create({
@@ -134,18 +135,18 @@ async function handleSelectMenu(interaction, client) {
 
     const ticketEmbed = new EmbedBuilder()
         .setAuthor({
-            name: "Support Ticket",
+            name: "Ticket de suporte",
             iconURL: ticketIcons.modIcon,
             url: "https://discord.gg/xQF9f9yUEM"
         })
-        .setDescription(`Hello ${user}, welcome to our support!\n- Please provide a detailed description of your issue\n- Our support team will assist you as soon as possible.\n- Feel free to open another ticket if this was closed.`)
-        .setFooter({ text: 'Your satisfaction is our priority', iconURL: ticketIcons.heartIcon })
+        .setDescription(`Olá ${user}, Bem-vindo ao nosso suporte!\n- Por favor descreva o seu problema! \n- Você receberá uma resposta logo logo.\n- Sinta-se livre para abrir outro ticket se este for fechado.`)
+        .setFooter({ text: 'Sua satisfação é nossa prioridade.', iconURL: ticketIcons.heartIcon })
         .setColor('#00FF00')
         .setTimestamp();
 
     const closeButton = new ButtonBuilder()
         .setCustomId(`close_ticket_${ticketId}`)
-        .setLabel('Close Ticket')
+        .setLabel('Fechar Ticket')
         .setStyle(ButtonStyle.Danger);
 
     const actionRow = new ActionRowBuilder().addComponents(closeButton);
@@ -155,21 +156,21 @@ async function handleSelectMenu(interaction, client) {
     const embed = new EmbedBuilder()
         .setColor(0x0099ff)
         .setAuthor({ 
-            name: "Ticket Created!", 
+            name: "Ticket Criado!", 
             iconURL: ticketIcons.correctIcon,
             url: "https://discord.gg/xQF9f9yUEM"
         })
-        .setDescription(`- Your ${ticketType} ticket has been created.`)
+        .setDescription(`- Seu ticket de ${ticketType} foi criado.`)
         .addFields(
             { name: 'Ticket Channel', value: `${ticketChannel.url}` },
-            { name: 'Instructions', value: 'Please describe your issue in detail.' }
+            { name: 'Instructions', value: 'Por favor descreva seu problema.' }
         )
         .setTimestamp()
-        .setFooter({ text: 'Thank you for reaching out!', iconURL: ticketIcons.modIcon });
+        .setFooter({ text: 'Obrigado por nos contatar!', iconURL: ticketIcons.modIcon });
 
-    await user.send({ content: `Your ${ticketType} ticket has been created`, embeds: [embed] });
+    await user.send({ content: `Seu ticket de ${ticketType} foi criado`, embeds: [embed] });
 
-    interaction.followUp({ content: 'Ticket created!', ephemeral: true });
+    interaction.followUp({ content: 'Ticket criado!', ephemeral: true });
 }
 
 async function handleCloseButton(interaction, client) {
@@ -181,7 +182,7 @@ async function handleCloseButton(interaction, client) {
 
     const ticket = await ticketsCollection.findOne({ id: ticketId });
     if (!ticket) {
-        return interaction.followUp({ content: 'Ticket not found. Please report to staff!', ephemeral: true });
+        return interaction.followUp({ content: 'Ticket não encontrado, por favor, reporte ao administrador.', ephemeral: true });
     }
 
     const ticketChannel = guild.channels.cache.get(ticket.channelId);
@@ -198,16 +199,16 @@ async function handleCloseButton(interaction, client) {
         const embed = new EmbedBuilder()
             .setColor(0x0099ff)
             .setAuthor({ 
-                name: "Ticket closed!", 
+                name: "Ticket fechado!", 
                 iconURL: ticketIcons.correctrIcon,
                 url: "https://discord.gg/xQF9f9yUEM"
             })
-            .setDescription(`- Your ticket has been closed.`)
+            .setDescription(`- Seu ticket foi fechado.`)
             .setTimestamp()
-            .setFooter({ text: 'Thank you for reaching out!', iconURL: ticketIcons.modIcon });
+            .setFooter({ text: 'Obrigado por nos contatar!', iconURL: ticketIcons.modIcon });
 
-        await ticketUser.send({ content: `Your ticket has been closed.`, embeds: [embed] });
+        await ticketUser.send({ content: `Seu ticket foi fechado.`, embeds: [embed] });
     }
 
-    interaction.followUp({ content: 'Ticket closed and user notified.', ephemeral: true });
+    interaction.followUp({ content: 'Ticket fechado e usuário notificado.', ephemeral: true });
 }
