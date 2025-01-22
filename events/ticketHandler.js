@@ -67,10 +67,9 @@ async function monitorConfigChanges(client) {
                             '- Por favor, seja paciente, você receberá uma resposta o mais rápido possível.')
                         .setFooter({ text: 'Estamos aqui para ajudar!', iconURL: ticketIcons.modIcon })
                         .setColor('#00FF00')
-                        .setTimestamp()
-                    .setImage('https://media.discordapp.net/attachments/1284876311516680282/1331623009370378372/125_Sem_Titulo_20250122105359.png?ex=67924a11&is=6790f891&hm=f51bed7a396f2abc18e645b0efe5080e3dd3db92be469c997ae079dc75f9f0a4&=&width=743&height=397')();
-
-
+                        .setImage('https://media.discordapp.net/attachments/1284876311516680282/1331623009370378372/125_Sem_Titulo_20250122105359.png?ex=67924a11&is=6790f891&hm=f51bed7a396f2abc18e645b0efe5080e3dd3db92be469c997ae079dc75f9f0a4&=&width=743&height=397')
+                        .setTimestamp();
+                    
                     const menu = new StringSelectMenuBuilder()
                         .setCustomId('select_ticket_type')
                         .setPlaceholder('Choose ticket type')
