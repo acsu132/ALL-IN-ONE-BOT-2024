@@ -23,14 +23,27 @@ module.exports = {
       const firstDevice = results[0];
       const deviceDetails = await gsmarena.catalog.getDevice(firstDevice.id);
 
+      // Função para truncar texto longo
+      const truncate = (text, maxLength = 1024) => {
+        return text.length > maxLength ? text.slice(0, maxLength - 3) + '...' : text;
+      };
+
+      const quickSpecs = deviceDetails.quickSpec
+        .map(spec => `${spec.name}: ${spec.value}`)
+        .join('\n');
+
+      const detailSpecs = deviceDetails.detailSpec
+        .map(category => `${category.category}:\n${category.specifications.map(spec => `- ${spec.name}: ${spec.value}`).join('\n')}`)
+        .join('\n\n');
+
       const embed = new Discord.EmbedBuilder()
         .setTitle(deviceDetails.name)
         .setURL(`https://www.gsmarena.com/${firstDevice.id}.php`)
         .setColor('#3498db')
         .setThumbnail(deviceDetails.img)
         .addFields(
-          { name: 'Especificações Rápidas', value: deviceDetails.quickSpec.map(spec => `${spec.name}: ${spec.value}`).join('\n') || 'N/A', inline: false },
-          { name: 'Detalhes', value: deviceDetails.detailSpec.map(category => `${category.category}:\n${category.specifications.map(spec => `- ${spec.name}: ${spec.value}`).join('\n')}`).join('\n\n') || 'N/A', inline: false }
+          { name: 'Especificações Rápidas', value: truncate(quickSpecs) || 'N/A', inline: false },
+          { name: 'Detalhes', value: truncate(detailSpecs) || 'N/A', inline: false }
         )
         .setFooter({ text: 'Dados obtidos via GSMArena API', iconURL: 'https://www.gsmarena.com/favicon.ico' });
 
