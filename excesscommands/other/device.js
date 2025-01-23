@@ -1,8 +1,5 @@
 const Discord = require('discord.js');
 const gsmarena = require('gsmarena-api'); // Biblioteca da API
-const dotenv = require('dotenv'); // Para gerenciar variáveis de ambiente
-
-dotenv.config(); // Carrega as variáveis do arquivo .env
 
 module.exports = {
   name: 'device',
@@ -26,9 +23,10 @@ module.exports = {
       const firstDevice = results[0];
       const deviceDetails = await gsmarena.catalog.getDevice(firstDevice.id);
 
+      // Envia o embed com as informações
       return sendEmbed(deviceDetails, message);
     } catch (error) {
-      console.error(error);
+      console.error('Erro ao executar o comando device:', error);
       return message.reply('Houve um erro ao buscar as especificações. Tente novamente mais tarde.');
     }
   }
