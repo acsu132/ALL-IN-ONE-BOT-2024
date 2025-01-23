@@ -32,6 +32,7 @@
     "genius-lyrics": "^4.4.7",
     "give-me-a-joke": "^0.5.1",
     "googleapis": "^140.0.0",
+    "gsmarena-api": "^1.0.0",
     "jsdom": "^21.1.1",
     "hmtai": "^3.2.3",
     "isomorphic-unfetch": "^4.0.2",
