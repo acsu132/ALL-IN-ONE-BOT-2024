@@ -1,26 +1,8 @@
 const Discord = require('discord.js');
 const gsmarena = require('gsmarena-api'); // Biblioteca da API
-const { MongoClient } = require('mongodb'); // Biblioteca para o MongoDB
 const dotenv = require('dotenv'); // Para gerenciar variáveis de ambiente
 
 dotenv.config(); // Carrega as variáveis do arquivo .env
-
-const mongoClient = new MongoClient(process.env.MONGODB_URI);
-let deviceCollection;
-
-(async () => {
-  try {
-    await mongoClient.connect();
-    console.log('Conectado ao MongoDB com sucesso.');
-    const db = mongoClient.db('deviceCache');
-    deviceCollection = db.collection('devices');
-
-    // Criar índice TTL para expirar os documentos após 24 horas
-    await deviceCollection.createIndex({ timestamp: 1 }, { expireAfterSeconds: 86400 });
-  } catch (err) {
-    console.error('Erro ao conectar ao MongoDB:', err);
-  }
-})();
 
 module.exports = {
   name: 'device',
@@ -34,12 +16,6 @@ module.exports = {
     const deviceName = args.join(' ').toLowerCase();
 
     try {
-      // Verificar se o dispositivo já está no cache
-      const cachedDevice = await deviceCollection.findOne({ name: deviceName });
-      if (cachedDevice) {
-        return sendEmbed(cachedDevice.details, message, true);
-      }
-
       // Busca dispositivos pelo nome
       const results = await gsmarena.search.search(deviceName);
       if (!results || results.length === 0) {
@@ -50,14 +26,7 @@ module.exports = {
       const firstDevice = results[0];
       const deviceDetails = await gsmarena.catalog.getDevice(firstDevice.id);
 
-      // Salvar no cache
-      await deviceCollection.insertOne({
-        name: deviceName,
-        details: deviceDetails,
-        timestamp: new Date()
-      });
-
-      return sendEmbed(deviceDetails, message, false);
+      return sendEmbed(deviceDetails, message);
     } catch (error) {
       console.error(error);
       return message.reply('Houve um erro ao buscar as especificações. Tente novamente mais tarde.');
@@ -66,7 +35,7 @@ module.exports = {
 };
 
 // Função para enviar embed
-function sendEmbed(deviceDetails, message, cached) {
+function sendEmbed(deviceDetails, message) {
   const truncate = (text, maxLength = 1024) => {
     return text.length > maxLength ? text.slice(0, maxLength - 3) + '...' : text;
   };
@@ -89,7 +58,7 @@ function sendEmbed(deviceDetails, message, cached) {
       { name: 'Detalhes', value: truncate(detailSpecs) || 'N/A', inline: false }
     )
     .setFooter({
-      text: cached ? 'Dados obtidos do cache' : 'Dados obtidos via GSMArena API',
+      text: 'Dados obtidos via GSMArena API',
       iconURL: 'https://www.gsmarena.com/favicon.ico'
     });
 
