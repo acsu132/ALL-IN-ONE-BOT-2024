@@ -1,28 +1,26 @@
 const Discord = require('discord.js');
 const gsmarena = require('gsmarena-api'); // Biblioteca da API
-const mongoose = require('mongoose'); // Para o MongoDB
+const { MongoClient } = require('mongodb'); // Biblioteca para o MongoDB
 const dotenv = require('dotenv'); // Para gerenciar variáveis de ambiente
 
 dotenv.config(); // Carrega as variáveis do arquivo .env
 
-// Conectar ao MongoDB
-mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-}).then(() => {
-  console.log('Conectado ao MongoDB com sucesso.');
-}).catch(err => {
-  console.error('Erro ao conectar ao MongoDB:', err);
-});
+const mongoClient = new MongoClient(process.env.MONGODB_URI);
+let deviceCollection;
 
-// Esquema do cache
-const deviceSchema = new mongoose.Schema({
-  name: { type: String, required: true, unique: true },
-  details: { type: Object, required: true },
-  timestamp: { type: Date, default: Date.now, expires: 86400 } // Expira em 24 horas
-});
+(async () => {
+  try {
+    await mongoClient.connect();
+    console.log('Conectado ao MongoDB com sucesso.');
+    const db = mongoClient.db('deviceCache');
+    deviceCollection = db.collection('devices');
 
-const Device = mongoose.model('Device', deviceSchema);
+    // Criar índice TTL para expirar os documentos após 24 horas
+    await deviceCollection.createIndex({ timestamp: 1 }, { expireAfterSeconds: 86400 });
+  } catch (err) {
+    console.error('Erro ao conectar ao MongoDB:', err);
+  }
+})();
 
 module.exports = {
   name: 'device',
@@ -37,7 +35,7 @@ module.exports = {
 
     try {
       // Verificar se o dispositivo já está no cache
-      const cachedDevice = await Device.findOne({ name: deviceName });
+      const cachedDevice = await deviceCollection.findOne({ name: deviceName });
       if (cachedDevice) {
         return sendEmbed(cachedDevice.details, message, true);
       }
@@ -53,9 +51,10 @@ module.exports = {
       const deviceDetails = await gsmarena.catalog.getDevice(firstDevice.id);
 
       // Salvar no cache
-      await Device.create({
+      await deviceCollection.insertOne({
         name: deviceName,
-        details: deviceDetails
+        details: deviceDetails,
+        timestamp: new Date()
       });
 
       return sendEmbed(deviceDetails, message, false);
