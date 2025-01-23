@@ -13,26 +13,24 @@ module.exports = {
     const deviceName = args.join(' ');
 
     try {
-      // Busca as especificações do dispositivo na API GSMArena
-      const device = await gsmarena.search(deviceName);
-      if (!device || device.length === 0) {
+      // Busca dispositivos pelo nome
+      const results = await gsmarena.search.search(deviceName);
+      if (!results || results.length === 0) {
         return message.reply(`Nenhum dispositivo encontrado com o nome **${deviceName}**.`);
       }
 
       // Seleciona o primeiro resultado
-      const deviceDetails = device[0];
+      const firstDevice = results[0];
+      const deviceDetails = await gsmarena.catalog.getDevice(firstDevice.id);
+
       const embed = new Discord.EmbedBuilder()
-        .setTitle(deviceDetails.title)
-        .setURL(deviceDetails.url)
+        .setTitle(deviceDetails.name)
+        .setURL(`https://www.gsmarena.com/${firstDevice.id}.php`)
         .setColor('#3498db')
-        .setThumbnail(deviceDetails.image)
+        .setThumbnail(deviceDetails.img)
         .addFields(
-          { name: 'Lançamento', value: deviceDetails.release || 'N/A', inline: true },
-          { name: 'Sistema Operacional', value: deviceDetails.os || 'N/A', inline: true },
-          { name: 'Tela', value: deviceDetails.display || 'N/A', inline: false },
-          { name: 'Processador', value: deviceDetails.chipset || 'N/A', inline: false },
-          { name: 'Memória', value: deviceDetails.memory || 'N/A', inline: false },
-          { name: 'Bateria', value: deviceDetails.battery || 'N/A', inline: false }
+          { name: 'Especificações Rápidas', value: deviceDetails.quickSpec.map(spec => `${spec.name}: ${spec.value}`).join('\n') || 'N/A', inline: false },
+          { name: 'Detalhes', value: deviceDetails.detailSpec.map(category => `${category.category}:\n${category.specifications.map(spec => `- ${spec.name}: ${spec.value}`).join('\n')}`).join('\n\n') || 'N/A', inline: false }
         )
         .setFooter({ text: 'Dados obtidos via GSMArena API', iconURL: 'https://www.gsmarena.com/favicon.ico' });
 
