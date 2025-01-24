@@ -1,5 +1,6 @@
 const Discord = require('discord.js');
-const axios = require('axios');
+const axios = require('axios'); // Para buscar dados da web
+const { JSDOM } = require('jsdom'); // Para manipular o HTML das páginas
 
 module.exports = {
   name: 'device',
@@ -10,37 +11,39 @@ module.exports = {
       return message.reply('Por favor, especifique o nome do dispositivo para a busca.');
     }
 
-    const deviceName = args.join(' ');
+    const device = args.join(' ').toLowerCase();
+    const url = `https://www.gsmarena.com/results.php3?sQuickSearch=yes&sName=${encodeURIComponent(device)}`;
 
     try {
-      const url = `https://www.gsmarena.com/results.php3?sQuickSearch=yes&sName=${encodeURIComponent(deviceName)}`;
+      // Fazendo requisição para a página de resultados do GSMArena
       const response = await axios.get(url, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
         },
       });
 
-      if (!response.data || !response.data.includes('section-body')) {
-        return message.reply(`Nenhum dispositivo encontrado com o nome **${deviceName}**.`);
+      const dom = new JSDOM(response.data);
+      const results = [...dom.window.document.querySelectorAll('.makers ul li a')];
+
+      if (results.length > 0) {
+        const embeds = results.slice(0, 5).map(result => {
+          const name = result.querySelector('strong span').textContent.trim();
+          const link = `https://www.gsmarena.com/${result.href}`;
+          const img = result.querySelector('img').src;
+
+          return new Discord.EmbedBuilder()
+            .setTitle(name)
+            .setURL(link)
+            .setThumbnail(img)
+            .setColor('#3498db')
+            .setDescription(`[Clique aqui para ver mais detalhes](${link})`);
+        });
+
+        return message.reply({ embeds });
+      } else {
+        return message.reply(`Nenhum dispositivo encontrado com o nome **${device}**.`);
       }
-
-      const match = response.data.match(/<h3.*?>(.*?)<\/h3>/);
-      const title = match ? match[1] : 'Título não encontrado';
-
-      const embed = new Discord.EmbedBuilder()
-        .setColor('#3498db')
-        .setTitle(`Resultados para: ${deviceName}`)
-        .setDescription(`Dispositivo encontrado: **${title}**\n[Veja mais detalhes](${url})`)
-        .setFooter({ text: 'Dados obtidos do site GSMArena', iconURL: 'https://www.gsmarena.com/favicon.ico' });
-
-      return message.reply({ embeds: [embed] });
     } catch (error) {
-      if (error.response && error.response.status === 429) {
-        const retryAfter = parseInt(error.response.headers['retry-after'], 10) || 60;
-        console.log(`Bloqueado pelo servidor. Tentando novamente em ${retryAfter} segundos.`);
-        return message.reply('O servidor bloqueou requisições temporariamente. Por favor, tente novamente mais tarde.');
-      }
-
       console.error('Erro ao buscar dispositivo:', error);
       return message.reply('Houve um erro ao buscar as especificações. Tente novamente mais tarde.');
     }
