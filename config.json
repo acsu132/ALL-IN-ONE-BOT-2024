@@ -8,7 +8,7 @@
         "utility": true,
         "other": true,
         "hentai": true,
-        "lavalink": true,
+        "lavalink": false,
         "troll": true,
         "levelling" : true,
         "economy" : true,
