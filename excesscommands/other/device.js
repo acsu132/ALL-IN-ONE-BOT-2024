@@ -39,21 +39,27 @@ module.exports = {
 
       const row = new ActionRowBuilder().addComponents(menu);
 
-      await message.reply({ content: 'Vários dispositivos encontrados:', components: [row] });
+      const replyMessage = await message.reply({ content: 'Vários dispositivos encontrados:', components: [row] });
 
       const filter = interaction => interaction.customId === 'select_device' && interaction.user.id === message.author.id;
-      const collector = message.channel.createMessageComponentCollector({ filter, time: 60000 });
+      const collector = replyMessage.createMessageComponentCollector({ filter, time: 60000 });
 
       collector.on('collect', async interaction => {
         await interaction.deferUpdate();
         const selectedDeviceId = interaction.values[0];
-        const deviceDetails = await gsmarena.catalog.getDevice(selectedDeviceId);
-        await sendEmbed(deviceDetails, message);
+
+        try {
+          const deviceDetails = await gsmarena.catalog.getDevice(selectedDeviceId);
+          await sendEmbed(deviceDetails, message);
+        } catch (error) {
+          console.error('Erro ao buscar detalhes do dispositivo:', error);
+          await message.reply('Houve um erro ao buscar os detalhes do dispositivo selecionado.');
+        }
       });
 
       collector.on('end', collected => {
         if (collected.size === 0) {
-          message.reply('Tempo esgotado para selecionar um dispositivo.');
+          replyMessage.edit({ content: 'Tempo esgotado para selecionar um dispositivo.', components: [] });
         }
       });
     } catch (error) {
@@ -70,12 +76,9 @@ async function sendEmbed(deviceDetails, message) {
   };
 
   const quickSpecs = deviceDetails.quickSpec
+    .slice(0, 5) // Mostra apenas 5 especificações rápidas
     .map(spec => `${spec.name}: ${spec.value}`)
     .join('\n');
-
-  const detailSpecs = deviceDetails.detailSpec
-    .map(category => `${category.category}:\n${category.specifications.map(spec => `- ${spec.name}: ${spec.value}`).join('\n')}`)
-    .join('\n\n');
 
   const embed = new EmbedBuilder()
     .setTitle(deviceDetails.name)
@@ -83,8 +86,7 @@ async function sendEmbed(deviceDetails, message) {
     .setColor('#3498db')
     .setThumbnail(deviceDetails.img)
     .addFields(
-      { name: 'Especificações Rápidas', value: truncate(quickSpecs) || 'N/A', inline: false },
-      { name: 'Detalhes', value: truncate(detailSpecs) || 'N/A', inline: false }
+      { name: 'Especificações Rápidas', value: truncate(quickSpecs) || 'N/A', inline: false }
     )
     .setFooter({
       text: 'Dados obtidos via GSMArena API',
