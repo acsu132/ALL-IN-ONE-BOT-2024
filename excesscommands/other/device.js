@@ -1,8 +1,5 @@
-const Discord = require('discord.js');
-const axios = require('axios');
-const { JSDOM } = require('jsdom');
-
-let isRequestActive = false; // Variável para limitar a uma requisição por comando
+const { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
+const gsmarena = require('gsmarena-api');
 
 module.exports = {
   name: 'device',
@@ -13,68 +10,86 @@ module.exports = {
       return message.reply('Por favor, especifique o nome do dispositivo para a busca.');
     }
 
-    if (isRequestActive) {
-      return message.reply('Uma requisição já está em andamento. Por favor, tente novamente em instantes.');
-    }
-
-    isRequestActive = true; // Marca a requisição como ativa
-    const device = args.join(' ').toLowerCase();
-    const url = `https://www.gsmarena.com/results.php3?sQuickSearch=yes&sName=${encodeURIComponent(device)}`;
+    const deviceName = args.join(' ').toLowerCase();
 
     try {
-      // Fazendo requisição para a página de resultados do GSMArena
-      const response = await axios.get(url, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        },
+      // Busca dispositivos pelo nome
+      const results = await gsmarena.search.search(deviceName);
+      if (!results || results.length === 0) {
+        return message.reply(`Nenhum dispositivo encontrado com o nome **${deviceName}**.`);
+      }
+
+      if (results.length === 1) {
+        // Apenas um dispositivo encontrado, envia detalhes direto
+        const deviceDetails = await gsmarena.catalog.getDevice(results[0].id);
+        return sendEmbed(deviceDetails, message);
+      }
+
+      // Vários dispositivos encontrados, cria menu de seleção
+      const options = results.map(device => ({
+        label: device.name,
+        value: device.id,
+        description: 'Clique para ver mais detalhes',
+      }));
+
+      const menu = new StringSelectMenuBuilder()
+        .setCustomId('select_device')
+        .setPlaceholder('Selecione um dispositivo')
+        .addOptions(options);
+
+      const row = new ActionRowBuilder().addComponents(menu);
+
+      await message.reply({ content: 'Vários dispositivos encontrados:', components: [row] });
+
+      const filter = interaction => interaction.customId === 'select_device' && interaction.user.id === message.author.id;
+      const collector = message.channel.createMessageComponentCollector({ filter, time: 60000 });
+
+      collector.on('collect', async interaction => {
+        await interaction.deferUpdate();
+        const selectedDeviceId = interaction.values[0];
+        const deviceDetails = await gsmarena.catalog.getDevice(selectedDeviceId);
+        await sendEmbed(deviceDetails, message);
       });
 
-      const dom = new JSDOM(response.data);
-      const results = [...dom.window.document.querySelectorAll('.makers ul li a')];
-
-      if (results.length > 0) {
-        const firstResult = results[0];
-        const name = firstResult.querySelector('strong span').textContent.trim();
-        const link = `https://www.gsmarena.com/${firstResult.href}`;
-        const img = firstResult.querySelector('img').src;
-
-        // Fazendo uma requisição detalhada para obter mais informações
-        const detailsResponse = await axios.get(link, {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-          },
-        });
-
-        const detailsDom = new JSDOM(detailsResponse.data);
-        const specs = detailsDom.window.document.querySelectorAll('.specs-cp dt, .specs-cp dd');
-
-        const specsText = [...specs]
-          .map((elem, index) => {
-            if (index % 2 === 0) {
-              return `**${elem.textContent.trim()}**: `; // Título
-            } else {
-              return `${elem.textContent.trim()}\n`; // Valor
-            }
-          })
-          .join('');
-
-        const embed = new Discord.EmbedBuilder()
-          .setColor('#3498db')
-          .setTitle(name)
-          .setURL(link)
-          .setThumbnail(img)
-          .setDescription(specsText.length > 4096 ? specsText.slice(0, 4093) + '...' : specsText)
-          .setFooter({ text: 'Dados obtidos do site GSMArena', iconURL: 'https://www.gsmarena.com/favicon.ico' });
-
-        return message.reply({ embeds: [embed] });
-      } else {
-        return message.reply(`Nenhum dispositivo encontrado com o nome **${device}**.`);
-      }
+      collector.on('end', collected => {
+        if (collected.size === 0) {
+          message.reply('Tempo esgotado para selecionar um dispositivo.');
+        }
+      });
     } catch (error) {
-      console.error('Erro ao buscar dispositivo:', error);
+      console.error(error);
       return message.reply('Houve um erro ao buscar as especificações. Tente novamente mais tarde.');
-    } finally {
-      isRequestActive = false; // Libera para novas requisições
     }
   },
 };
+
+// Função para enviar embed
+async function sendEmbed(deviceDetails, message) {
+  const truncate = (text, maxLength = 1024) => {
+    return text.length > maxLength ? text.slice(0, maxLength - 3) + '...' : text;
+  };
+
+  const quickSpecs = deviceDetails.quickSpec
+    .map(spec => `${spec.name}: ${spec.value}`)
+    .join('\n');
+
+  const detailSpecs = deviceDetails.detailSpec
+    .map(category => `${category.category}:\n${category.specifications.map(spec => `- ${spec.name}: ${spec.value}`).join('\n')}`)
+    .join('\n\n');
+
+  const embed = new EmbedBuilder()
+    .setTitle(deviceDetails.name)
+    .setURL(`https://www.gsmarena.com/${deviceDetails.id}.php`)
+    .setColor('#3498db')
+    .setThumbnail(deviceDetails.img)
+    .addFields(
+      { name: 'Especificações Rápidas', value: truncate(quickSpecs) || 'N/A', inline: false },
+      { name: 'Detalhes', value: truncate(detailSpecs) || 'N/A', inline: false }
+    )
+    .setFooter({
+      text: 'Dados obtidos via GSMArena API',
+      iconURL: 'https://www.gsmarena.com/favicon.ico',
+    });
+
+  await message.reply({ embeds: [embed] });
+}
