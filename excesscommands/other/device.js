@@ -1,6 +1,8 @@
 const Discord = require('discord.js');
-const axios = require('axios'); // Para buscar dados da web
-const { JSDOM } = require('jsdom'); // Para manipular o HTML das páginas
+const axios = require('axios');
+const { JSDOM } = require('jsdom');
+
+let isRequestActive = false; // Variável para limitar a uma requisição por comando
 
 module.exports = {
   name: 'device',
@@ -11,6 +13,11 @@ module.exports = {
       return message.reply('Por favor, especifique o nome do dispositivo para a busca.');
     }
 
+    if (isRequestActive) {
+      return message.reply('Uma requisição já está em andamento. Por favor, tente novamente em instantes.');
+    }
+
+    isRequestActive = true; // Marca a requisição como ativa
     const device = args.join(' ').toLowerCase();
     const url = `https://www.gsmarena.com/results.php3?sQuickSearch=yes&sName=${encodeURIComponent(device)}`;
 
@@ -26,26 +33,48 @@ module.exports = {
       const results = [...dom.window.document.querySelectorAll('.makers ul li a')];
 
       if (results.length > 0) {
-        const embeds = results.slice(0, 5).map(result => {
-          const name = result.querySelector('strong span').textContent.trim();
-          const link = `https://www.gsmarena.com/${result.href}`;
-          const img = result.querySelector('img').src;
+        const firstResult = results[0];
+        const name = firstResult.querySelector('strong span').textContent.trim();
+        const link = `https://www.gsmarena.com/${firstResult.href}`;
+        const img = firstResult.querySelector('img').src;
 
-          return new Discord.EmbedBuilder()
-            .setTitle(name)
-            .setURL(link)
-            .setThumbnail(img)
-            .setColor('#3498db')
-            .setDescription(`[Clique aqui para ver mais detalhes](${link})`);
+        // Fazendo uma requisição detalhada para obter mais informações
+        const detailsResponse = await axios.get(link, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+          },
         });
 
-        return message.reply({ embeds });
+        const detailsDom = new JSDOM(detailsResponse.data);
+        const specs = detailsDom.window.document.querySelectorAll('.specs-cp dt, .specs-cp dd');
+
+        const specsText = [...specs]
+          .map((elem, index) => {
+            if (index % 2 === 0) {
+              return `**${elem.textContent.trim()}**: `; // Título
+            } else {
+              return `${elem.textContent.trim()}\n`; // Valor
+            }
+          })
+          .join('');
+
+        const embed = new Discord.EmbedBuilder()
+          .setColor('#3498db')
+          .setTitle(name)
+          .setURL(link)
+          .setThumbnail(img)
+          .setDescription(specsText.length > 4096 ? specsText.slice(0, 4093) + '...' : specsText)
+          .setFooter({ text: 'Dados obtidos do site GSMArena', iconURL: 'https://www.gsmarena.com/favicon.ico' });
+
+        return message.reply({ embeds: [embed] });
       } else {
         return message.reply(`Nenhum dispositivo encontrado com o nome **${device}**.`);
       }
     } catch (error) {
       console.error('Erro ao buscar dispositivo:', error);
       return message.reply('Houve um erro ao buscar as especificações. Tente novamente mais tarde.');
+    } finally {
+      isRequestActive = false; // Libera para novas requisições
     }
   },
 };
