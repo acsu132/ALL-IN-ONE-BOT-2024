@@ -113,4 +113,11 @@ async function enviarNoticias(client, collection) {
         console.log('Nenhuma nova notícia foi encontrada para tópicos diferentes do último enviado.');
         // O bot não enviará nada neste caso
     }
-}
+    
+module.exports = {
+  handler: (client) => {
+    // Lógica do evento
+    console.log('News handler ativado');
+  },
+};
+
