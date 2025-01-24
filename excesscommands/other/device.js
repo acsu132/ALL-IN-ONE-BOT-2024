@@ -1,57 +1,48 @@
-const { SlashCommandBuilder } = require('@discordjs/builders');
-const { EmbedBuilder } = require('discord.js');
+const Discord = require('discord.js');
 const axios = require('axios');
 
 module.exports = {
-    data: new SlashCommandBuilder()
-        .setName('device')
-        .setDescription('Busca informações de um dispositivo no GSMArena.')
-        .addStringOption(option =>
-            option.setName('nome')
-                .setDescription('Nome do dispositivo a ser buscado')
-                .setRequired(true)
-        ),
+  name: 'device',
+  description: 'Busca especificações de um dispositivo no GSMArena.',
 
-    async execute(interaction) {
-        const deviceName = interaction.options.getString('nome');
+  async execute(message, args) {
+    if (args.length === 0) {
+      return message.reply('Por favor, especifique o nome do dispositivo para a busca.');
+    }
 
-        // Defere a resposta para lidar com atrasos
-        await interaction.deferReply();
+    const deviceName = args.join(' ');
 
-        const url = `https://www.gsmarena.com/results.php3?sQuickSearch=yes&sName=${encodeURIComponent(deviceName)}`;
+    try {
+      const url = `https://www.gsmarena.com/results.php3?sQuickSearch=yes&sName=${encodeURIComponent(deviceName)}`;
+      const response = await axios.get(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        },
+      });
 
-        try {
-            const response = await axios.get(url, {
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-                },
-            });
+      if (!response.data || !response.data.includes('section-body')) {
+        return message.reply(`Nenhum dispositivo encontrado com o nome **${deviceName}**.`);
+      }
 
-            // Verifica se a resposta contém o conteúdo esperado
-            if (!response.data || !response.data.includes('section-body')) {
-                return interaction.editReply('Nenhum dispositivo encontrado. Por favor, tente novamente com outro nome.');
-            }
+      const match = response.data.match(/<h3.*?>(.*?)<\/h3>/);
+      const title = match ? match[1] : 'Título não encontrado';
 
-            // Busca simples no HTML (regex ou outro método para extrair detalhes)
-            const match = response.data.match(/<h3.*?>(.*?)<\/h3>/);
-            const title = match ? match[1] : 'Título não encontrado';
+      const embed = new Discord.EmbedBuilder()
+        .setColor('#3498db')
+        .setTitle(`Resultados para: ${deviceName}`)
+        .setDescription(`Dispositivo encontrado: **${title}**\n[Veja mais detalhes](${url})`)
+        .setFooter({ text: 'Dados obtidos do site GSMArena', iconURL: 'https://www.gsmarena.com/favicon.ico' });
 
-            const embed = new EmbedBuilder()
-                .setColor('#3498db')
-                .setTitle(`Resultados para: ${deviceName}`)
-                .setDescription(`Dispositivo encontrado: **${title}**\n[Veja mais detalhes](${url})`)
-                .setFooter({ text: 'Dados obtidos do site GSMArena', iconURL: 'https://www.gsmarena.com/favicon.ico' });
+      return message.reply({ embeds: [embed] });
+    } catch (error) {
+      if (error.response && error.response.status === 429) {
+        const retryAfter = parseInt(error.response.headers['retry-after'], 10) || 60;
+        console.log(`Bloqueado pelo servidor. Tentando novamente em ${retryAfter} segundos.`);
+        return message.reply('O servidor bloqueou requisições temporariamente. Por favor, tente novamente mais tarde.');
+      }
 
-            return interaction.editReply({ embeds: [embed] });
-        } catch (error) {
-            if (error.response && error.response.status === 429) {
-                const retryAfter = parseInt(error.response.headers['retry-after'], 10) || 60;
-                console.log(`Bloqueado pelo servidor. Tentando novamente em ${retryAfter} segundos.`);
-                return interaction.editReply('O servidor bloqueou requisições temporariamente. Por favor, tente novamente mais tarde.');
-            }
-
-            console.error('Erro ao buscar dispositivo:', error);
-            return interaction.editReply('Houve um erro ao buscar as especificações. Tente novamente mais tarde.');
-        }
-    },
+      console.error('Erro ao buscar dispositivo:', error);
+      return message.reply('Houve um erro ao buscar as especificações. Tente novamente mais tarde.');
+    }
+  },
 };
