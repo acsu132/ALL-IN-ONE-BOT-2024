@@ -4,7 +4,7 @@ const { MongoClient } = require('mongodb');
 const { URL } = require('url'); // Módulo para manipulação de URLs
 
 // URI do MongoDB
-const MONGO_URI = 'mongodb+srv://RTX:GAMING@cluster0.iuzzl.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+const MONGO_URI = 'const MONGO_URI = 'mongodb+srv://nextai:nextbotpass@cluster0.iuzzl.mongodb.net/newsBot?retryWrites=true&w=majority';
 const DATABASE_NAME = 'newsBot';
 const COLLECTION_NAME = 'sentArticles';
 
