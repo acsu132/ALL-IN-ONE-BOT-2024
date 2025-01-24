@@ -72,20 +72,21 @@ module.exports = {
 
                 pages.push({
                     title: 'Bot Information',
-                    description: `Welcome to the help command! This bot provides a variety of commands to enhance your server experience. Below are the categories and the number of commands available in each.`,
+                    description: `Bem-vindo ao comando de ajuda (help), nesse painel gigante você consegue ver informações sobre o bot e todos os comandos disponíveis`,
                     commands: [
-                        `**💜 Bot Developer:** GlaceYT\n` +
-                        `**Bot Version:** 1.2.0\n` +
-                        `**Total Servers:** ${totalServers}\n` +
-                        `**Total Members:** ${totalMembers}\n` +
-                        `**Bot Uptime:** ${uptimeHours}h ${uptimeMinutes}m ${uptimeSeconds}s\n` +
-                        `**Total Commands:** ${totalCommands}\n` +
-                        `**Enabled Categories:** ${enabledCategoriesList.join(', ')}\n` +
-                        `**Disabled Categories:** ${disabledCategoriesList.join(', ')}\n`,
+                        `**💜 Original by:** GlaceYT\n` +
+                        `**Dono do Fork:** Adriel\n` +
+                        `**Versão do Bot:** 1.2.0\n` +
+                        `**Total de servidores:** ${totalServers}\n` +
+                        `**Total de membros:** ${totalMembers}\n` +
+                        `**Bot ativo desde:** ${uptimeHours}h ${uptimeMinutes}m ${uptimeSeconds}s\n` +
+                        `**Comandos Totais:** ${totalCommands}\n` +
+                        `**Categorias Ativadas:** ${enabledCategoriesList.join(', ')}\n` +
+                        `**Categorias Desativadas:** ${disabledCategoriesList.join(', ')}\n`,
                     ],
-                    color: "#3498db",
+                    color: "#9900FF",
                     author: {
-                        name: 'All In One',
+                        name: 'Next AI',
                         iconURL: "https://cdn.discordapp.com/attachments/1246408947708072027/1255167194036437093/1558-zerotwo-exciteddance.gif?ex=667c250a&is=667ad38a&hm=09e6db36fd79436eb57de466589f21ca947329edd69b8e591d0f6586b89df296&",
                         url: "https://discord.gg/xQF9f9yUEM"
                     }
@@ -106,11 +107,11 @@ module.exports = {
                 for (const [category, commands] of Object.entries(commandData)) {
                     const page = {
                         title: `${category.charAt(0).toUpperCase() + category.slice(1)} Commands`,
-                        description: `**Total Commands : **${commands.length}\n` +
-                            `**Usage : **Both Slash commands and Prefix\n\n` +
+                        description: `**Total de Comandos: **${commands.length}\n` +
+                            `**Usage : **Ambos comandos slash e prefixo\n\n` +
                             `${category.charAt(0).toUpperCase() + category.slice(1)} related commands`,
                         commands: commands.map(command => `\`\`${command}\`\``),
-                        color: "#3498db",
+                        color: "#9900FF",
                         author: {
                             name: `${category.charAt(0).toUpperCase() + category.slice(1)} Commands`,
                             url: "https://discord.gg/xQF9f9yUEM"
