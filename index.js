@@ -53,7 +53,7 @@ const loadEventHandlers = () => {
     newsHandler.init(client);
 
     const stickynotesHandler = require('./events/stickynotes');
-    stickynotesHandler(client);
+    stickynotesHandler.init(client);
 
     // Giveaway System
     const giveawayHandler = require('./events/giveaway');
