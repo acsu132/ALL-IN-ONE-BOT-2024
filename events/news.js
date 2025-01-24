@@ -109,17 +109,9 @@ async function enviarNoticias(client, collection) {
         }
     }
 
-module.exports = (client) => {
-    // Sua lógica principal do evento aqui
-
-    let noticiaEnviada = false; // Exemplo de como 'noticiaEnviada' pode ser definido
-
-    // Verifique as notícias
     if (!noticiaEnviada) {
         console.log('Nenhuma nova notícia foi encontrada para tópicos diferentes do último enviado.');
-        // O bot não enviará nada neste caso
     }
 
     console.log('News handler ativado');
-};
-
+}
