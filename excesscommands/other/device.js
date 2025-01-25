@@ -1,6 +1,7 @@
 const { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
 const axios = require('axios');
 const cheerio = require('cheerio');
+const HttpsProxyAgent = require('https-proxy-agent');
 
 module.exports = {
   name: 'device',
@@ -15,55 +16,52 @@ module.exports = {
     const searchUrl = `https://www.gsmarena.com/results.php3?sQuickSearch=yes&sName=${encodeURIComponent(deviceName)}`;
 
     // Lista de proxies da imagem
-const proxies = [
-  'http://67.43.228.251:7365',
-  'http://91.92.155.207:3128',
-  'http://62.84.245.79:80',
-  'http://8.210.17.35:80',
-  'http://217.182.210.152:80',
-  'http://219.65.73.81:80',
-  'http://63.143.57.115:80',
-  'http://44.218.183.55:80',
-  'http://3.136.29.104:80',
-  'http://3.71.239.218:3128',
-  'http://3.127.62.252:80',
-];
-
+    const proxies = [
+      'http://67.43.228.251:7365',
+      'http://91.92.155.207:3128',
+      'http://62.84.245.79:80',
+      'http://8.210.17.35:80',
+      'http://217.182.210.152:80',
+      'http://219.65.73.81:80',
+      'http://63.143.57.115:80',
+      'http://44.218.183.55:80',
+      'http://3.136.29.104:80',
+      'http://3.71.239.218:3128',
+      'http://3.127.62.252:80',
+    ];
 
     // Função para escolher um proxy aleatório
     const getRandomProxy = () => {
-  const randomIndex = Math.floor(Math.random() * proxies.length);
-  const proxyUrl = proxies[randomIndex];
-  const [protocol, rest] = proxyUrl.split('://');
+      const randomIndex = Math.floor(Math.random() * proxies.length);
+      const proxyUrl = proxies[randomIndex];
+      const [protocol, rest] = proxyUrl.split('://');
 
-  // Verificar se há autenticação no proxy
-  if (rest.includes('@')) {
-    const [auth, host] = rest.split('@');
-    const [username, password] = auth.split(':');
-    const [hostname, port] = host.split(':');
+      // Verificar se há autenticação no proxy
+      if (rest.includes('@')) {
+        const [auth, host] = rest.split('@');
+        const [username, password] = auth.split(':');
+        const [hostname, port] = host.split(':');
 
-    return {
-      protocol,
-      hostname,
-      port: parseInt(port, 10),
-      auth: { username, password },
+        return {
+          protocol,
+          hostname,
+          port: parseInt(port, 10),
+          auth: { username, password },
+        };
+      } else {
+        const [hostname, port] = rest.split(':');
+        return {
+          protocol,
+          hostname,
+          port: parseInt(port, 10),
+        };
+      }
     };
-  } else {
-    const [hostname, port] = rest.split(':');
-    return {
-      protocol,
-      hostname,
-      port: parseInt(port, 10),
-    };
-  }
-};
-
 
     try {
       // Escolher proxy para a requisição
       const proxy = getRandomProxy();
-      const agent = require('https-proxy-agent');
-      const httpsAgent = new agent(proxy);
+      const httpsAgent = new HttpsProxyAgent(proxy);
 
       // Fazer requisição usando o proxy
       const response = await axios.get(searchUrl, { httpsAgent });
