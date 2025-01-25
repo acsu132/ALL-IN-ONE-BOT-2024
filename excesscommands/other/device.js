@@ -14,9 +14,46 @@ module.exports = {
     const deviceName = args.join(' ').toLowerCase();
     const searchUrl = `https://www.gsmarena.com/results.php3?sQuickSearch=yes&sName=${encodeURIComponent(deviceName)}`;
 
+    // Lista de proxies da imagem
+const proxies = [
+  'http://67.43.228.251:7365',
+  'http://91.92.155.207:3128',
+  'http://62.84.245.79:80',
+  'http://8.210.17.35:80',
+  'http://217.182.210.152:80',
+  'http://219.65.73.81:80',
+  'http://63.143.57.115:80',
+  'http://44.218.183.55:80',
+  'http://3.136.29.104:80',
+  'http://3.71.239.218:3128',
+  'http://3.127.62.252:80',
+];
+
+    // Função para escolher um proxy aleatório
+    const getRandomProxy = () => {
+      const randomIndex = Math.floor(Math.random() * proxies.length);
+      const proxyUrl = proxies[randomIndex];
+      const [protocol, rest] = proxyUrl.split('://');
+      const [auth, host] = rest.split('@');
+      const [username, password] = auth.split(':');
+      const [hostname, port] = host.split(':');
+
+      return {
+        protocol,
+        hostname,
+        port: parseInt(port, 10),
+        auth: { username, password },
+      };
+    };
+
     try {
-      // Fazendo a requisição para a página de resultados
-      const response = await axios.get(searchUrl);
+      // Escolher proxy para a requisição
+      const proxy = getRandomProxy();
+      const agent = require('https-proxy-agent');
+      const httpsAgent = new agent(proxy);
+
+      // Fazer requisição usando o proxy
+      const response = await axios.get(searchUrl, { httpsAgent });
       const $ = cheerio.load(response.data);
 
       // Extraindo os resultados da busca
@@ -35,10 +72,10 @@ module.exports = {
 
       if (results.length === 1) {
         // Apenas um dispositivo encontrado, busca detalhes
-        const deviceDetails = await fetchDeviceDetails(results[0].link);
+        const deviceDetails = await fetchDeviceDetails(results[0].link, httpsAgent);
         return sendEmbed(deviceDetails, message);
       }
-comoo
+
       // Vários dispositivos encontrados, cria menu de seleção
       const options = results.map((device, index) => ({
         label: device.name,
@@ -61,7 +98,7 @@ comoo
       collector.on('collect', async interaction => {
         await interaction.deferUpdate();
         const selectedIndex = parseInt(interaction.values[0], 10);
-        const deviceDetails = await fetchDeviceDetails(results[selectedIndex].link);
+        const deviceDetails = await fetchDeviceDetails(results[selectedIndex].link, httpsAgent);
         await sendEmbed(deviceDetails, message);
       });
 
@@ -78,8 +115,8 @@ comoo
 };
 
 // Função para buscar detalhes do dispositivo
-async function fetchDeviceDetails(link) {
-  const response = await axios.get(link);
+async function fetchDeviceDetails(link, httpsAgent) {
+  const response = await axios.get(link, { httpsAgent });
   const $ = cheerio.load(response.data);
 
   const quickSpecs = [];
