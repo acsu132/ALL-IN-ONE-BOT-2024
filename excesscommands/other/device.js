@@ -1,23 +1,5 @@
 const { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
-const gsmarena = require('gsmarena-api');
 const axios = require('axios');
-
-// Configuração para múltiplos clientes
-const userAgents = [
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-  "Mozilla/5.0 (Linux; Android 10; SM-G975F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Mobile Safari/537.36",
-];
-
-const randomUserAgent = () => userAgents[Math.floor(Math.random() * userAgents.length)];
-
-const createClient = () => {
-  return axios.create({
-    headers: {
-      'User-Agent': randomUserAgent(),
-    },
-  });
-};
 
 module.exports = {
   name: 'device',
@@ -29,18 +11,40 @@ module.exports = {
     }
 
     const deviceName = args.join(' ').toLowerCase();
-    const client = createClient();
+
+    // Lista de proxies
+    const proxies = [
+      'http://188.114.98.233:80',
+      'http://172.67.181.10:80',
+      'http://172.67.118.110:80'
+    ];
+
+    // Função para selecionar um proxy aleatório
+    const getRandomProxy = () => {
+      const randomIndex = Math.floor(Math.random() * proxies.length);
+      return proxies[randomIndex];
+    };
 
     try {
+      // Configurar cliente com proxy aleatório
+      const proxy = getRandomProxy();
+      const instance = axios.create({
+        baseURL: 'https://api.gsmarena.com',
+        proxy: {
+          host: new URL(proxy).hostname,
+          port: parseInt(new URL(proxy).port),
+        },
+      });
+
       // Busca dispositivos pelo nome
-      const results = await gsmarena.search.search(deviceName, { client });
+      const { data: results } = await instance.get(`/search/${deviceName}`);
       if (!results || results.length === 0) {
         return message.reply(`Nenhum dispositivo encontrado com o nome **${deviceName}**.`);
       }
 
       if (results.length === 1) {
         // Apenas um dispositivo encontrado, envia detalhes direto
-        const deviceDetails = await gsmarena.catalog.getDevice(results[0].id, { client });
+        const { data: deviceDetails } = await instance.get(`/device/${results[0].id}`);
         return sendEmbed(deviceDetails, message);
       }
 
@@ -66,7 +70,7 @@ module.exports = {
       collector.on('collect', async interaction => {
         await interaction.deferUpdate();
         const selectedDeviceId = interaction.values[0];
-        const deviceDetails = await gsmarena.catalog.getDevice(selectedDeviceId, { client });
+        const { data: deviceDetails } = await instance.get(`/device/${selectedDeviceId}`);
         await sendEmbed(deviceDetails, message);
       });
 
@@ -89,9 +93,12 @@ async function sendEmbed(deviceDetails, message) {
   };
 
   const quickSpecs = deviceDetails.quickSpec
-    .slice(0, 5) // Limitar a 5 especificações
     .map(spec => `${spec.name}: ${spec.value}`)
     .join('\n');
+
+  const detailSpecs = deviceDetails.detailSpec
+    .map(category => `${category.category}:\n${category.specifications.map(spec => `- ${spec.name}: ${spec.value}`).join('\n')}`)
+    .join('\n\n');
 
   const embed = new EmbedBuilder()
     .setTitle(deviceDetails.name)
@@ -100,6 +107,7 @@ async function sendEmbed(deviceDetails, message) {
     .setThumbnail(deviceDetails.img)
     .addFields(
       { name: 'Especificações Rápidas', value: truncate(quickSpecs) || 'N/A', inline: false },
+      { name: 'Detalhes', value: truncate(detailSpecs) || 'N/A', inline: false }
     )
     .setFooter({
       text: 'Dados obtidos via GSMArena API',
