@@ -1,5 +1,5 @@
 const { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
-const axios = require('axios');
+const puppeteer = require('puppeteer');
 
 module.exports = {
   name: 'device',
@@ -12,46 +12,46 @@ module.exports = {
 
     const deviceName = args.join(' ').toLowerCase();
 
-    // Lista de proxies
-    const proxies = [
-      'http://188.114.98.233:80',
-      'http://172.67.181.10:80',
-      'http://172.67.118.110:80'
-    ];
-
-    // Função para selecionar um proxy aleatório
-    const getRandomProxy = () => {
-      const randomIndex = Math.floor(Math.random() * proxies.length);
-      return proxies[randomIndex];
-    };
-
     try {
-      // Configurar cliente com proxy aleatório
-      const proxy = getRandomProxy();
-      const instance = axios.create({
-        baseURL: 'https://api.gsmarena.com',
-        proxy: {
-          host: new URL(proxy).hostname,
-          port: parseInt(new URL(proxy).port),
-        },
+      const browser = await puppeteer.launch();
+      const page = await browser.newPage();
+
+      // Navega para a página de resultados do GSMArena
+      const searchUrl = `https://www.gsmarena.com/results.php3?sQuickSearch=yes&sName=${encodeURIComponent(deviceName)}`;
+      await page.goto(searchUrl, { waitUntil: 'domcontentloaded' });
+
+      // Extrai os resultados da busca
+      const results = await page.evaluate(() => {
+        const devices = [];
+        const elements = document.querySelectorAll('.makers ul li a');
+
+        elements.forEach(element => {
+          devices.push({
+            name: element.querySelector('strong span').textContent.trim(),
+            link: element.href,
+            img: element.querySelector('img').src,
+          });
+        });
+
+        return devices;
       });
 
-      // Busca dispositivos pelo nome
-      const { data: results } = await instance.get(`/search/${deviceName}`);
-      if (!results || results.length === 0) {
+      if (results.length === 0) {
+        await browser.close();
         return message.reply(`Nenhum dispositivo encontrado com o nome **${deviceName}**.`);
       }
 
       if (results.length === 1) {
-        // Apenas um dispositivo encontrado, envia detalhes direto
-        const { data: deviceDetails } = await instance.get(`/device/${results[0].id}`);
+        // Apenas um dispositivo encontrado, busca detalhes
+        const deviceDetails = await fetchDeviceDetails(results[0].link, page);
+        await browser.close();
         return sendEmbed(deviceDetails, message);
       }
 
       // Vários dispositivos encontrados, cria menu de seleção
-      const options = results.map(device => ({
+      const options = results.map((device, index) => ({
         label: device.name,
-        value: device.id,
+        value: String(index),
         description: 'Clique para ver mais detalhes',
       }));
 
@@ -62,22 +62,23 @@ module.exports = {
 
       const row = new ActionRowBuilder().addComponents(menu);
 
-      await message.reply({ content: 'Vários dispositivos encontrados:', components: [row] });
+      const replyMessage = await message.reply({ content: 'Vários dispositivos encontrados:', components: [row] });
 
       const filter = interaction => interaction.customId === 'select_device' && interaction.user.id === message.author.id;
-      const collector = message.channel.createMessageComponentCollector({ filter, time: 60000 });
+      const collector = replyMessage.createMessageComponentCollector({ filter, time: 60000 });
 
       collector.on('collect', async interaction => {
         await interaction.deferUpdate();
-        const selectedDeviceId = interaction.values[0];
-        const { data: deviceDetails } = await instance.get(`/device/${selectedDeviceId}`);
+        const selectedIndex = parseInt(interaction.values[0], 10);
+        const deviceDetails = await fetchDeviceDetails(results[selectedIndex].link, page);
         await sendEmbed(deviceDetails, message);
       });
 
-      collector.on('end', collected => {
+      collector.on('end', async collected => {
         if (collected.size === 0) {
-          message.reply('Tempo esgotado para selecionar um dispositivo.');
+          await replyMessage.edit({ content: 'Tempo esgotado para selecionar um dispositivo.', components: [] });
         }
+        await browser.close();
       });
     } catch (error) {
       console.error(error);
@@ -86,31 +87,52 @@ module.exports = {
   },
 };
 
+// Função para buscar detalhes do dispositivo
+async function fetchDeviceDetails(link, page) {
+  await page.goto(link, { waitUntil: 'domcontentloaded' });
+
+  const details = await page.evaluate(() => {
+    const quickSpecElements = document.querySelectorAll('.specs-cp dt, .specs-cp dd');
+    const quickSpecs = [];
+
+    for (let i = 0; i < quickSpecElements.length; i += 2) {
+      quickSpecs.push({
+        name: quickSpecElements[i].textContent.trim(),
+        value: quickSpecElements[i + 1].textContent.trim(),
+      });
+    }
+
+    return {
+      name: document.querySelector('.specs-phone-name-title')?.textContent.trim() || 'Dispositivo',
+      img: document.querySelector('.specs-photo-main img')?.src || '',
+      quickSpecs,
+    };
+  });
+
+  return details;
+}
+
 // Função para enviar embed
 async function sendEmbed(deviceDetails, message) {
   const truncate = (text, maxLength = 1024) => {
     return text.length > maxLength ? text.slice(0, maxLength - 3) + '...' : text;
   };
 
-  const quickSpecs = deviceDetails.quickSpec
+  const quickSpecs = deviceDetails.quickSpecs
+    .slice(0, 5) // Mostra apenas 5 especificações rápidas
     .map(spec => `${spec.name}: ${spec.value}`)
     .join('\n');
 
-  const detailSpecs = deviceDetails.detailSpec
-    .map(category => `${category.category}:\n${category.specifications.map(spec => `- ${spec.name}: ${spec.value}`).join('\n')}`)
-    .join('\n\n');
-
   const embed = new EmbedBuilder()
     .setTitle(deviceDetails.name)
-    .setURL(`https://www.gsmarena.com/${deviceDetails.id}.php`)
+    .setURL(deviceDetails.link)
     .setColor('#3498db')
     .setThumbnail(deviceDetails.img)
     .addFields(
-      { name: 'Especificações Rápidas', value: truncate(quickSpecs) || 'N/A', inline: false },
-      { name: 'Detalhes', value: truncate(detailSpecs) || 'N/A', inline: false }
+      { name: 'Especificações Rápidas', value: truncate(quickSpecs) || 'N/A', inline: false }
     )
     .setFooter({
-      text: 'Dados obtidos via GSMArena API',
+      text: 'Dados obtidos via GSMArena',
       iconURL: 'https://www.gsmarena.com/favicon.ico',
     });
 
