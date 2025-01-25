@@ -29,22 +29,35 @@ const proxies = [
   'http://3.127.62.252:80',
 ];
 
+
     // Função para escolher um proxy aleatório
     const getRandomProxy = () => {
-      const randomIndex = Math.floor(Math.random() * proxies.length);
-      const proxyUrl = proxies[randomIndex];
-      const [protocol, rest] = proxyUrl.split('://');
-      const [auth, host] = rest.split('@');
-      const [username, password] = auth.split(':');
-      const [hostname, port] = host.split(':');
+  const randomIndex = Math.floor(Math.random() * proxies.length);
+  const proxyUrl = proxies[randomIndex];
+  const [protocol, rest] = proxyUrl.split('://');
 
-      return {
-        protocol,
-        hostname,
-        port: parseInt(port, 10),
-        auth: { username, password },
-      };
+  // Verificar se há autenticação no proxy
+  if (rest.includes('@')) {
+    const [auth, host] = rest.split('@');
+    const [username, password] = auth.split(':');
+    const [hostname, port] = host.split(':');
+
+    return {
+      protocol,
+      hostname,
+      port: parseInt(port, 10),
+      auth: { username, password },
     };
+  } else {
+    const [hostname, port] = rest.split(':');
+    return {
+      protocol,
+      hostname,
+      port: parseInt(port, 10),
+    };
+  }
+};
+
 
     try {
       // Escolher proxy para a requisição
