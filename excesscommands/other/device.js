@@ -1,5 +1,6 @@
 const { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
-const puppeteer = require('puppeteer');
+const axios = require('axios');
+const cheerio = require('cheerio');
 
 module.exports = {
   name: 'device',
@@ -11,43 +12,33 @@ module.exports = {
     }
 
     const deviceName = args.join(' ').toLowerCase();
+    const searchUrl = `https://www.gsmarena.com/results.php3?sQuickSearch=yes&sName=${encodeURIComponent(deviceName)}`;
 
     try {
-      const browser = await puppeteer.launch();
-      const page = await browser.newPage();
+      // Fazendo a requisição para a página de resultados
+      const response = await axios.get(searchUrl);
+      const $ = cheerio.load(response.data);
 
-      // Navega para a página de resultados do GSMArena
-      const searchUrl = `https://www.gsmarena.com/results.php3?sQuickSearch=yes&sName=${encodeURIComponent(deviceName)}`;
-      await page.goto(searchUrl, { waitUntil: 'domcontentloaded' });
-
-      // Extrai os resultados da busca
-      const results = await page.evaluate(() => {
-        const devices = [];
-        const elements = document.querySelectorAll('.makers ul li a');
-
-        elements.forEach(element => {
-          devices.push({
-            name: element.querySelector('strong span').textContent.trim(),
-            link: element.href,
-            img: element.querySelector('img').src,
-          });
+      // Extraindo os resultados da busca
+      const results = [];
+      $('.makers ul li a').each((i, element) => {
+        results.push({
+          name: $(element).find('strong span').text().trim(),
+          link: `https://www.gsmarena.com/${$(element).attr('href')}`,
+          img: $(element).find('img').attr('src'),
         });
-
-        return devices;
       });
 
       if (results.length === 0) {
-        await browser.close();
         return message.reply(`Nenhum dispositivo encontrado com o nome **${deviceName}**.`);
       }
 
       if (results.length === 1) {
         // Apenas um dispositivo encontrado, busca detalhes
-        const deviceDetails = await fetchDeviceDetails(results[0].link, page);
-        await browser.close();
+        const deviceDetails = await fetchDeviceDetails(results[0].link);
         return sendEmbed(deviceDetails, message);
       }
-
+comoo
       // Vários dispositivos encontrados, cria menu de seleção
       const options = results.map((device, index) => ({
         label: device.name,
@@ -70,15 +61,14 @@ module.exports = {
       collector.on('collect', async interaction => {
         await interaction.deferUpdate();
         const selectedIndex = parseInt(interaction.values[0], 10);
-        const deviceDetails = await fetchDeviceDetails(results[selectedIndex].link, page);
+        const deviceDetails = await fetchDeviceDetails(results[selectedIndex].link);
         await sendEmbed(deviceDetails, message);
       });
 
-      collector.on('end', async collected => {
+      collector.on('end', collected => {
         if (collected.size === 0) {
-          await replyMessage.edit({ content: 'Tempo esgotado para selecionar um dispositivo.', components: [] });
+          replyMessage.edit({ content: 'Tempo esgotado para selecionar um dispositivo.', components: [] });
         }
-        await browser.close();
       });
     } catch (error) {
       console.error(error);
@@ -88,28 +78,25 @@ module.exports = {
 };
 
 // Função para buscar detalhes do dispositivo
-async function fetchDeviceDetails(link, page) {
-  await page.goto(link, { waitUntil: 'domcontentloaded' });
+async function fetchDeviceDetails(link) {
+  const response = await axios.get(link);
+  const $ = cheerio.load(response.data);
 
-  const details = await page.evaluate(() => {
-    const quickSpecElements = document.querySelectorAll('.specs-cp dt, .specs-cp dd');
-    const quickSpecs = [];
-
-    for (let i = 0; i < quickSpecElements.length; i += 2) {
-      quickSpecs.push({
-        name: quickSpecElements[i].textContent.trim(),
-        value: quickSpecElements[i + 1].textContent.trim(),
-      });
+  const quickSpecs = [];
+  $('.specs-cp dt, .specs-cp dd').each((i, element) => {
+    if (i % 2 === 0) {
+      quickSpecs.push({ name: $(element).text().trim() });
+    } else {
+      quickSpecs[quickSpecs.length - 1].value = $(element).text().trim();
     }
-
-    return {
-      name: document.querySelector('.specs-phone-name-title')?.textContent.trim() || 'Dispositivo',
-      img: document.querySelector('.specs-photo-main img')?.src || '',
-      quickSpecs,
-    };
   });
 
-  return details;
+  return {
+    name: $('.specs-phone-name-title').text().trim() || 'Dispositivo',
+    img: $('.specs-photo-main img').attr('src') || '',
+    quickSpecs,
+    link,
+  };
 }
 
 // Função para enviar embed
