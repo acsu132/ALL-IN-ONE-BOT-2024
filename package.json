@@ -23,6 +23,7 @@
     "anime-actions": "^2.1.1",
     "axios": "^1.7.2",
     "bad-words": "^3.0.4",
+    "cheerio": "^1.0.0-rc.12",
     "canvacord": "^6.0.2",
     "discord.js": "^14.15.3",
     "distube": "^5.0.1",
