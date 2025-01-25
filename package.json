@@ -35,6 +35,7 @@
     "googleapis": "^140.0.0",
     "jsdom": "^21.1.1",
     "hmtai": "^3.2.3",
+    "https-proxy-agent": "^5.0.1",
     "isomorphic-unfetch": "^4.0.2",
     "leven": "^4.0.0",
     "libsodium-wrappers": "^0.7.13",
