@@ -1,7 +1,7 @@
 const { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
 const axios = require('axios');
 const cheerio = require('cheerio');
-const HttpsProxyAgent = require('https-proxy-agent');
+const { HttpsProxyAgent } = require('https-proxy-agent');
 
 module.exports = {
   name: 'device',
@@ -33,38 +33,30 @@ module.exports = {
     // Função para escolher um proxy aleatório
     const getRandomProxy = () => {
       const randomIndex = Math.floor(Math.random() * proxies.length);
-      const proxyUrl = proxies[randomIndex];
-      const [protocol, rest] = proxyUrl.split('://');
-
-      // Verificar se há autenticação no proxy
-      if (rest.includes('@')) {
-        const [auth, host] = rest.split('@');
-        const [username, password] = auth.split(':');
-        const [hostname, port] = host.split(':');
-
-        return {
-          protocol,
-          hostname,
-          port: parseInt(port, 10),
-          auth: { username, password },
-        };
-      } else {
-        const [hostname, port] = rest.split(':');
-        return {
-          protocol,
-          hostname,
-          port: parseInt(port, 10),
-        };
-      }
+      return proxies[randomIndex];
     };
 
     try {
-      // Escolher proxy para a requisição
-      const proxy = getRandomProxy();
-      const httpsAgent = new HttpsProxyAgent(proxy);
+      let success = false;
+      let response;
+      for (let i = 0; i < proxies.length; i++) {
+        const proxyUrl = getRandomProxy();
+        const httpsAgent = new HttpsProxyAgent(proxyUrl);
 
-      // Fazer requisição usando o proxy
-      const response = await axios.get(searchUrl, { httpsAgent });
+        try {
+          // Fazer requisição usando o proxy
+          response = await axios.get(searchUrl, { httpsAgent });
+          success = true;
+          break; // Sai do loop se a requisição for bem-sucedida
+        } catch (error) {
+          console.warn(`Falha ao usar proxy ${proxyUrl}. Tentando outro...`);
+        }
+      }
+
+      if (!success) {
+        return message.reply('Não foi possível acessar o servidor. Tente novamente mais tarde.');
+      }
+
       const $ = cheerio.load(response.data);
 
       // Extraindo os resultados da busca
@@ -83,7 +75,7 @@ module.exports = {
 
       if (results.length === 1) {
         // Apenas um dispositivo encontrado, busca detalhes
-        const deviceDetails = await fetchDeviceDetails(results[0].link, httpsAgent);
+        const deviceDetails = await fetchDeviceDetails(results[0].link);
         return sendEmbed(deviceDetails, message);
       }
 
@@ -109,7 +101,7 @@ module.exports = {
       collector.on('collect', async interaction => {
         await interaction.deferUpdate();
         const selectedIndex = parseInt(interaction.values[0], 10);
-        const deviceDetails = await fetchDeviceDetails(results[selectedIndex].link, httpsAgent);
+        const deviceDetails = await fetchDeviceDetails(results[selectedIndex].link);
         await sendEmbed(deviceDetails, message);
       });
 
@@ -126,8 +118,8 @@ module.exports = {
 };
 
 // Função para buscar detalhes do dispositivo
-async function fetchDeviceDetails(link, httpsAgent) {
-  const response = await axios.get(link, { httpsAgent });
+async function fetchDeviceDetails(link) {
+  const response = await axios.get(link);
   const $ = cheerio.load(response.data);
 
   const quickSpecs = [];
