@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, PermissionsBitField, ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
-const { ticketsCollection } = require('../../mongodb');
-const cmdIcons = require('../../UI/icons/commandicons');
+const { ticketsCollection } = require('../mongodb');
+const cmdIcons = require('../UI/icons/commandicons');
 
 module.exports = {
     data: new SlashCommandBuilder()
