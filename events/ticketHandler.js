@@ -27,6 +27,9 @@ setInterval(loadConfig, 5000);
 module.exports = (client) => {
     client.on('ready', async () => {
         await loadConfig();
+        for (const guildId of Object.keys(config.tickets)) {
+            await checkAndSendPanel(client, guildId);
+        }
     });
 
     client.on('interactionCreate', async (interaction) => {
@@ -38,7 +41,46 @@ module.exports = (client) => {
             handleDeleteButton(interaction, client);
         }
     });
+
+    client.on('messageDelete', async (message) => {
+        const ticketData = await ticketsCollection.findOne({ ticketChannelId: message.channel.id });
+
+        if (ticketData && message.author.id === client.user.id) {
+            await ticketsCollection.updateOne(
+                { serverId: ticketData.serverId },
+                { $set: { status: false } }
+            );
+        }
+    });
 };
+
+async function checkAndSendPanel(client, guildId) {
+    const ticketData = await ticketsCollection.findOne({ serverId: guildId });
+
+    if (!ticketData || !ticketData.status) return;
+
+    const channel = await client.channels.fetch(ticketData.ticketChannelId).catch(() => null);
+    if (!channel) return;
+
+    const messages = await channel.messages.fetch({ limit: 10 }).catch(() => []);
+    const existingPanel = messages.find(msg => msg.author.id === client.user.id);
+
+    if (!existingPanel) {
+        const embed = new EmbedBuilder()
+            .setColor('#0099ff')
+            .setTitle('🎫 Sistema de Tickets')
+            .setDescription('Clique no botão abaixo para abrir um ticket.');
+
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId('create_ticket')
+                .setLabel('📩 Criar Ticket')
+                .setStyle(ButtonStyle.Primary)
+        );
+
+        await channel.send({ embeds: [embed], components: [row] });
+    }
+}
 
 async function handleSelectMenu(interaction, client) {
     await interaction.deferReply({ ephemeral: true });
