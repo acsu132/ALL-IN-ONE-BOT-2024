@@ -19,10 +19,6 @@ module.exports = {
             option.setName('adminroleid')
                 .setDescription('The ID of the admin role for tickets')
                 .setRequired(true))
-        .addStringOption(option =>
-            option.setName('categoryid')
-                .setDescription('The ID of the category where tickets will be created')
-                .setRequired(true))
         .addBooleanOption(option =>
             option.setName('status')
                 .setDescription('Enable or disable the ticket system')
@@ -39,7 +35,6 @@ module.exports = {
         const serverId = interaction.options.getString('serverid');
         const channelId = interaction.options.getString('channelid');
         const adminRoleId = interaction.options.getString('adminroleid');
-        const categoryId = interaction.options.getString('categoryid');
         const status = interaction.options.getBoolean('status');
         const guild = interaction.guild;
 
@@ -47,10 +42,6 @@ module.exports = {
             return interaction.reply({ content: 'The server ID provided does not match this server.', ephemeral: true });
         }
 
-        const categoryChannel = guild.channels.cache.get(categoryId);
-        if (!categoryChannel || categoryChannel.type !== 'GUILD_CATEGORY') {
-            return interaction.reply({ content: 'Invalid category ID. Please provide a valid category ID.', ephemeral: true });
-        }
 
         await ticketsCollection.updateOne(
             { serverId },
@@ -59,7 +50,6 @@ module.exports = {
                     serverId,
                     ticketChannelId: channelId,
                     adminRoleId,
-                    categoryId,
                     status,
                     ownerId: guild.ownerId
                 }
