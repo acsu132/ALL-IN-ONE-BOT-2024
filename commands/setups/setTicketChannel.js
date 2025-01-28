@@ -58,7 +58,7 @@ module.exports = {
         );
 
         interaction.reply({
-            content: `Ticket system updated successfully!\n- **Panel Channel:** <#${channelId}>\n- **Admin Role:** <@&${adminRoleId}>\n- **Category:** <#${categoryId}>\n- **Status:** ${status ? 'Enabled' : 'Disabled'}`,
+            content: `Ticket system updated successfully!\n- **Panel Channel:** <#${channelId}>\n- **Admin Role:** <@&${adminRoleId}>\n- **Status:** ${status ? 'Enabled' : 'Disabled'}`,
             ephemeral: true
         });
     }
