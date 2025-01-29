@@ -1,11 +1,12 @@
 const { SlashCommandBuilder, EmbedBuilder, PermissionsBitField } = require('discord.js');
 const { ticketsCollection } = require('../../mongodb');
 const cmdIcons = require('../../UI/icons/commandicons');
+const ticketHandler = require('../../handlers/ticketHandler');
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('setticketchannel')
-        .setDescription('Set the ticket system configuration for a server')
+        .setDescription('Set the ticket channel for a server')
         .setDefaultMemberPermissions(PermissionsBitField.Flags.ManageChannels)
         .addStringOption(option =>
             option.setName('serverid')
@@ -13,7 +14,7 @@ module.exports = {
                 .setRequired(true))
         .addStringOption(option =>
             option.setName('channelid')
-                .setDescription('The ID of the ticket panel channel')
+                .setDescription('The ID of the ticket channel')
                 .setRequired(true))
         .addStringOption(option =>
             option.setName('adminroleid')
@@ -21,9 +22,8 @@ module.exports = {
                 .setRequired(true))
         .addBooleanOption(option =>
             option.setName('status')
-                .setDescription('Enable or disable the ticket system')
+                .setDescription('The status of the ticket channel')
                 .setRequired(true)),
-
     async execute(interaction) {
         if (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageChannels)) {
             const embed = new EmbedBuilder()
@@ -31,7 +31,7 @@ module.exports = {
                 .setDescription('You do not have permission to use this command.');
             return interaction.reply({ embeds: [embed], ephemeral: true });
         }
-
+        
         const serverId = interaction.options.getString('serverid');
         const channelId = interaction.options.getString('channelid');
         const adminRoleId = interaction.options.getString('adminroleid');
@@ -39,9 +39,14 @@ module.exports = {
         const guild = interaction.guild;
 
         if (serverId !== guild.id) {
-            return interaction.reply({ content: 'The server ID provided does not match this server.', ephemeral: true });
+            return interaction.reply({ content: 'The server ID provided does not match the server ID of this server.', ephemeral: true });
         }
 
+        if (!serverId || !channelId || !adminRoleId || status === null) {
+            return interaction.reply({ content: 'Invalid input. Please provide valid server ID, channel ID, admin role ID, and status.', ephemeral: true });
+        }
+
+        const serverOwnerId = interaction.guild.ownerId;
 
         await ticketsCollection.updateOne(
             { serverId },
@@ -51,15 +56,16 @@ module.exports = {
                     ticketChannelId: channelId,
                     adminRoleId,
                     status,
-                    ownerId: guild.ownerId
+                    ownerId: serverOwnerId
                 }
             },
             { upsert: true }
         );
 
-        interaction.reply({
-            content: `Ticket system updated successfully!\n- **Panel Channel:** <#${channelId}>\n- **Admin Role:** <@&${adminRoleId}>\n- **Status:** ${status ? 'Enabled' : 'Disabled'}`,
-            ephemeral: true
-        });
+        interaction.reply({ content: `Ticket channel updated successfully for server ID ${serverId}.`, ephemeral: true });
+
+        if (status) {
+            ticketHandler.sendTicketPanel(guild, channelId);
+        }
     }
 };
