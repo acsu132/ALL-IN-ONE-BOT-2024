@@ -1,86 +1,130 @@
-const { SlashCommandBuilder, EmbedBuilder, PermissionsBitField, ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
 const { ticketsCollection } = require('../mongodb');
-const cmdIcons = require('../UI/icons/commandicons');
+const { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, StringSelectMenuBuilder, PermissionsBitField, ChannelType } = require('discord.js');
+const fs = require('fs');
+const path = require('path');
+const ticketIcons = require('../UI/icons/ticketicons');
 
-module.exports = {
-    data: new SlashCommandBuilder()
-        .setName('setticketchannel')
-        .setDescription('Set the ticket system configuration for a server')
-        .setDefaultMemberPermissions(PermissionsBitField.Flags.ManageChannels)
-        .addStringOption(option =>
-            option.setName('serverid')
-                .setDescription('The ID of the server')
-                .setRequired(true))
-        .addStringOption(option =>
-            option.setName('channelid')
-                .setDescription('The ID of the ticket panel channel')
-                .setRequired(true))
-        .addStringOption(option =>
-            option.setName('adminroleid')
-                .setDescription('The ID of the admin role for tickets')
-                .setRequired(true))
-        .addBooleanOption(option =>
-            option.setName('status')
-                .setDescription('Enable or disable the ticket system')
-                .setRequired(true)),
+let config = {};
 
-    async execute(interaction) {
-        if (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageChannels)) {
-            const embed = new EmbedBuilder()
-                .setColor('#ff0000')
-                .setDescription('You do not have permission to use this command.');
-            return interaction.reply({ embeds: [embed], ephemeral: true });
-        }
-
-        const serverId = interaction.options.getString('serverid');
-        const channelId = interaction.options.getString('channelid');
-        const adminRoleId = interaction.options.getString('adminroleid');
-        const status = interaction.options.getBoolean('status');
-        const guild = interaction.guild;
-
-        if (serverId !== guild.id) {
-            return interaction.reply({ content: 'The server ID provided does not match this server.', ephemeral: true });
-        }
-
-        await ticketsCollection.updateOne(
-            { serverId },
-            {
-                $set: {
-                    serverId,
-                    ticketChannelId: channelId,
-                    adminRoleId,
-                    status,
-                    ownerId: guild.ownerId
-                }
-            },
-            { upsert: true }
-        );
-
-        const ticketEmbed = new EmbedBuilder()
-            .setTitle('🎟️ Sistema de Tickets')
-            .setDescription('Selecione uma opção abaixo para abrir um ticket:')
-            .setColor('#5865F2');
-
-        const selectMenu = new StringSelectMenuBuilder()
-            .setCustomId('ticket_select')
-            .setPlaceholder('Escolha uma categoria de ticket')
-            .addOptions([
-                { label: 'Sugestão', value: 'suggestion', description: 'Envie uma sugestão para o servidor' },
-                { label: 'Suporte', value: 'support', description: 'Abra um ticket para suporte' },
-                { label: 'Denunciar', value: 'report', description: 'Reporte um usuário ou problema' },
-                { label: 'Feedback', value: 'feedback', description: 'Dê um feedback sobre o servidor' }
-            ]);
-
-        const row = new ActionRowBuilder().addComponents(selectMenu);
-
-        const ticketChannel = await guild.channels.fetch(channelId);
-        if (ticketChannel) {
-            await ticketChannel.send({ embeds: [ticketEmbed], components: [row] });
-        }
-
-        interaction.reply({
-            content: `Ticket system updated successfully!\n- **Panel Channel:** <#${channelId}>\n- **Admin Role:** <@&${adminRoleId}>\n- **Status:** ${status ? 'Enabled' : 'Disabled'}`,
-            ephemeral: true
-        });
+async function loadConfig() {
+    try {
+        const tickets = await ticketsCollection.find({}).toArray();
+        config.tickets = tickets.reduce((acc, ticket) => {
+            acc[ticket.serverId] = {
+                ticketChannelId: ticket.ticketChannelId,
+                adminRoleId: ticket.adminRoleId,
+                status: ticket.status
+            };
+            return acc;
+        }, {});
+    } catch (err) {
+        console.error('Erro ao carregar configuração:', err);
     }
+}
+
+setInterval(loadConfig, 5000);
+
+module.exports = (client) => {
+    client.on('ready', async () => {
+        await loadConfig();
+    });
+
+    client.on('interactionCreate', async (interaction) => {
+        if (interaction.isStringSelectMenu() && interaction.customId === 'select_ticket_type') {
+            handleSelectMenu(interaction);
+        } else if (interaction.isButton()) {
+            if (interaction.customId.startsWith('close_ticket_')) {
+                handleCloseTicket(interaction);
+            } else if (interaction.customId.startsWith('reopen_ticket_')) {
+                handleReopenTicket(interaction);
+            } else if (interaction.customId.startsWith('delete_ticket_')) {
+                handleDeleteTicket(interaction);
+            } else if (interaction.customId.startsWith('transcribe_ticket_')) {
+                handleTranscribeTicket(interaction);
+            }
+        }
+    });
 };
+
+async function handleSelectMenu(interaction) {
+    const selectedType = interaction.values[0];
+    const ticketChannel = await interaction.guild.channels.create({
+        name: `ticket-${interaction.user.username}`,
+        type: ChannelType.GuildText,
+        permissionOverwrites: [
+            {
+                id: interaction.guild.id,
+                deny: [PermissionsBitField.Flags.ViewChannel]
+            },
+            {
+                id: interaction.user.id,
+                allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages]
+            }
+        ]
+    });
+
+    await ticketsCollection.insertOne({ id: ticketChannel.id, userId: interaction.user.id, channelId: ticketChannel.id });
+    interaction.reply({ content: `Ticket criado: ${ticketChannel}`, ephemeral: true });
+}
+
+async function handleCloseTicket(interaction) {
+    const ticketId = interaction.customId.replace('close_ticket_', '');
+    const ticket = await ticketsCollection.findOne({ id: ticketId });
+    if (!ticket) return interaction.reply({ content: 'Ticket não encontrado.', ephemeral: true });
+
+    const ticketChannel = interaction.guild.channels.cache.get(ticket.channelId);
+    if (ticketChannel) {
+        await ticketChannel.permissionOverwrites.edit(ticket.userId, { ViewChannel: false });
+    }
+    interaction.reply({ content: 'Ticket fechado!', ephemeral: true });
+}
+
+async function handleReopenTicket(interaction) {
+    const ticketId = interaction.customId.replace('reopen_ticket_', '');
+    const ticket = await ticketsCollection.findOne({ id: ticketId });
+    if (!ticket) return interaction.reply({ content: 'Ticket não encontrado.', ephemeral: true });
+
+    const ticketChannel = interaction.guild.channels.cache.get(ticket.channelId);
+    if (ticketChannel) {
+        await ticketChannel.permissionOverwrites.edit(ticket.userId, { ViewChannel: true });
+    }
+    interaction.reply({ content: 'Ticket reaberto!', ephemeral: true });
+}
+
+async function handleDeleteTicket(interaction) {
+    const ticketId = interaction.customId.replace('delete_ticket_', '');
+    const ticket = await ticketsCollection.findOne({ id: ticketId });
+    if (!ticket) return interaction.reply({ content: 'Ticket não encontrado.', ephemeral: true });
+
+    const settings = config.tickets[interaction.guild.id];
+    if (!interaction.member.roles.cache.has(settings.adminRoleId)) {
+        return interaction.reply({ content: 'Apenas administradores podem excluir tickets.', ephemeral: true });
+    }
+
+    const ticketChannel = interaction.guild.channels.cache.get(ticket.channelId);
+    if (ticketChannel) await ticketChannel.delete();
+    await ticketsCollection.deleteOne({ id: ticketId });
+    interaction.reply({ content: 'Ticket excluído permanentemente!', ephemeral: true });
+}
+
+async function handleTranscribeTicket(interaction) {
+    const ticketId = interaction.customId.replace('transcribe_ticket_', '');
+    const ticket = await ticketsCollection.findOne({ id: ticketId });
+    if (!ticket) return interaction.reply({ content: 'Ticket não encontrado.', ephemeral: true });
+
+    const settings = config.tickets[interaction.guild.id];
+    if (!interaction.member.roles.cache.has(settings.adminRoleId)) {
+        return interaction.reply({ content: 'Apenas administradores podem transcrever tickets.', ephemeral: true });
+    }
+
+    const ticketChannel = interaction.guild.channels.cache.get(ticket.channelId);
+    if (!ticketChannel) return interaction.reply({ content: 'Canal do ticket não encontrado.', ephemeral: true });
+
+    const messages = await ticketChannel.messages.fetch({ limit: 100 });
+    const transcript = messages.map(m => `${m.author.tag}: ${m.content}`).reverse().join('\n');
+
+    const filePath = path.join(__dirname, `transcript-${ticketId}.txt`);
+    fs.writeFileSync(filePath, transcript);
+
+    interaction.reply({ content: 'Transcrição criada!', files: [filePath], ephemeral: true });
+}
