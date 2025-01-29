@@ -1,6 +1,41 @@
 const { ticketsCollection } = require('../mongodb');
 const { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, StringSelectMenuBuilder, PermissionsBitField, ChannelType } = require('discord.js');
 const ticketIcons = require('../UI/icons/ticketicons');
+const fs = require('fs');  // Para manipular arquivos
+
+async function transcreverTicket(ticketId, guild, client) {
+    const ticket = await ticketsCollection.findOne({ id: ticketId });
+    if (!ticket) return;
+
+    const ticketChannel = guild.channels.cache.get(ticket.channelId);
+    if (!ticketChannel) return;
+
+    // Pega as mensagens do canal de tickets
+    const messages = await ticketChannel.messages.fetch({ limit: 100 });  // Pode ser ajustado para buscar mais mensagens, se necessário
+    const content = messages.map(msg => `${msg.author.username}: ${msg.content}`).join('\n');
+
+    // Cria o arquivo .txt
+    const fileName = `ticket_${ticketId}.txt`;
+    fs.writeFileSync(fileName, content);
+
+    // Envia para o administrador
+    const adminRole = guild.roles.cache.get(ticket.adminRoleId);
+    const admins = adminRole.members.map(member => member.user);  // Pega todos os membros com a role de admin
+
+    for (let admin of admins) {
+        const adminUser = await client.users.fetch(admin.id);
+        if (adminUser) {
+            await adminUser.send({
+                content: `Aqui está a transcrição do ticket ${ticketId}:`,
+                files: [fileName]
+            });
+        }
+    }
+
+    // Remove o arquivo após o envio
+    fs.unlinkSync(fileName);
+}
+
 
 let config = {};
 
@@ -181,15 +216,42 @@ async function handleCloseButton(interaction, client) {
 
     const ticket = await ticketsCollection.findOne({ id: ticketId });
     if (!ticket) {
-        return interaction.followUp({ content: 'Ticket not found. Please report to staff!', ephemeral: true });
+        return interaction.followUp({ content: 'Ticket não encontrado. Por favor, avise a equipe!', ephemeral: true });
     }
 
     const ticketChannel = guild.channels.cache.get(ticket.channelId);
     if (ticketChannel) {
-        setTimeout(async () => {
+        if (interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+            // Se for um administrador, o ticket será deletado
             await ticketChannel.delete().catch(console.error);
-        }, 5000);
+        } else {
+            // Caso não seja administrador, apenas remove as permissões de visualização
+            await ticketChannel.permissionOverwrites.edit(ticket.userId, {
+                VIEW_CHANNEL: false
+            });
+            await ticketChannel.send('Este ticket foi fechado e você não pode mais visualizá-lo.');
+
+            const ticketUser = await client.users.fetch(ticket.userId);
+            if (ticketUser) {
+                const embed = new EmbedBuilder()
+                    .setColor(0x0099ff)
+                    .setAuthor({ 
+                        name: "Ticket fechado!", 
+                        iconURL: ticketIcons.correctrIcon,
+                        url: "https://discord.gg/xQF9f9yUEM"
+                    })
+                    .setDescription(`- Seu ticket foi fechado.`)
+                    .setTimestamp()
+                    .setFooter({ text: 'Obrigado por nos contatar!', iconURL: ticketIcons.modIcon });
+
+                await ticketUser.send({ content: `Seu ticket foi fechado.`, embeds: [embed] });
+            }
+        }
     }
+
+    await ticketsCollection.updateOne({ id: ticketId }, { $set: { status: 'closed' } });
+    interaction.followUp({ content: 'Ticket fechado.', ephemeral: true });
+}
 
     await ticketsCollection.deleteOne({ id: ticketId });
 
