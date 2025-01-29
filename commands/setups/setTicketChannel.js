@@ -1,8 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, PermissionsBitField } = require('discord.js');
 const { ticketsCollection } = require('../../mongodb');
 const cmdIcons = require('../../UI/icons/commandicons');
-const ticketHandler = require('../../handlers/ticketHandler');
-
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('setticketchannel')
@@ -25,13 +23,13 @@ module.exports = {
                 .setDescription('The status of the ticket channel')
                 .setRequired(true)),
     async execute(interaction) {
-        if (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageChannels)) {
-            const embed = new EmbedBuilder()
-                .setColor('#ff0000')
-                .setDescription('You do not have permission to use this command.');
-            return interaction.reply({ embeds: [embed], ephemeral: true });
-        }
-        
+        if (interaction.isCommand && interaction.isCommand()) {
+            if (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageChannels)) {
+                const embed = new EmbedBuilder()
+                    .setColor('#ff0000')
+                    .setDescription('You do not have permission to use this command.');
+                return interaction.reply({ embeds: [embed], ephemeral: true });
+            }
         const serverId = interaction.options.getString('serverid');
         const channelId = interaction.options.getString('channelid');
         const adminRoleId = interaction.options.getString('adminroleid');
@@ -47,6 +45,12 @@ module.exports = {
         }
 
         const serverOwnerId = interaction.guild.ownerId;
+        // const memberId = interaction.user.id;
+        // const ownerId = (await ticketsCollection.findOne({ serverId }))?.ownerId;
+
+        // if (memberId !== serverOwnerId && memberId !== ownerId) {
+        //     return interaction.reply({ content: 'Only the server owner or specified owners can use this command.', ephemeral: true });
+        // }
 
         await ticketsCollection.updateOne(
             { serverId },
@@ -63,9 +67,19 @@ module.exports = {
         );
 
         interaction.reply({ content: `Ticket channel updated successfully for server ID ${serverId}.`, ephemeral: true });
-
-        if (status) {
-            ticketHandler.sendTicketPanel(guild, channelId);
-        }
+    } else {
+        const embed = new EmbedBuilder()
+        .setColor('#3498db')
+        .setAuthor({ 
+            name: "Alert!", 
+            iconURL: cmdIcons.dotIcon ,
+            url: "https://discord.gg/xQF9f9yUEM"
+        })
+        .setDescription('- This command can only be used through slash command!\n- Please use `/setticketchannel`')
+        .setTimestamp();
+    
+        await interaction.reply({ embeds: [embed] });
+    
+        }  
     }
 };
