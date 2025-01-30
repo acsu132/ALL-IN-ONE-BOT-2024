@@ -59,24 +59,24 @@ async function monitorConfigChanges(client) {
                         .setAuthor({
                             name: "Welcome to Ticket Support",
                             iconURL: ticketIcons.mainIcon,
-                            url: "https://discord.gg/xQF9f9yUEM"
+                            url: "https://discord.gg/sdD2XwkA"
                         })
                         .setDescription('- Escolha uma opção no menu para criar um ticket.\n\n' +
                             '**Regras nos tickets:**\n' +
-                            '- Tickets vazios não são permitidos.\n' +
+                            '- Deixe o conteúdo necessário no ticket, não aguarde receber uma resposta para começar a falar.\n' +
                             '- Por favor, seja paciente, você receberá uma resposta o mais rápido possível.')
-                        .setImage('https://media.discordapp.net/attachments/1284876311516680282/1331623009370378372/125_Sem_Titulo_20250122105359.png?ex=67924a11&is=6790f891&hm=f51bed7a396f2abc18e645b0efe5080e3dd3db92be469c997ae079dc75f9f0a4&=&width=743&height=397')
-                        .setFooter({ text: 'Estamos aqui para ajudar!', iconURL: ticketIcons.modIcon })
-                        .setColor('#00FF00')
+                        .setImage('https://media.discordapp.net/attachments/1284876311516680282/1334577310682316942/154_Sem_Titulo_20250130143334.png?ex=679d097a&is=679bb7fa&hm=a9a327bc3c9f8e48151306fad18b924771f124d0e45392e16c70626aa51d0057&=&width=848&height=397')
+                        .setFooter({ text: 'Next AI Tickets', iconURL: ticketIcons.modIcon })
+                        .setColor('#ff82ff')
                         .setTimestamp();
                     
                     const menu = new StringSelectMenuBuilder()
                         .setCustomId('select_ticket_type')
                         .setPlaceholder('Choose ticket type')
                         .addOptions([
-                            { label: '🆘 Suporte', value: 'support' },
-                            { label: '📂 Sugestão', value: 'suggestion' },
-                            { label: '💜 Feedback', value: 'feedback' },
+                            { label: '🍃 Suporte', value: 'support' },
+                            { label: '🚀 Sugestão', value: 'suggestion' },
+                            { label: '✨ Feedback', value: 'feedback' },
                             { label: '⚠️ Denunciar', value: 'report' }
                         ]);
 
@@ -137,7 +137,7 @@ async function handleSelectMenu(interaction, client) {
         .setAuthor({
             name: "Ticket de suporte",
             iconURL: ticketIcons.modIcon,
-            url: "https://discord.gg/xQF9f9yUEM"
+            url: "https://discord.gg/sdD2XwkA"
         })
         .setDescription(`Olá ${user}, Bem-vindo ao nosso suporte!\n- Por favor descreva o seu problema! \n- Você receberá uma resposta logo logo.\n- Sinta-se livre para abrir outro ticket se este for fechado.`)
         .setFooter({ text: 'Sua satisfação é nossa prioridade.', iconURL: ticketIcons.heartIcon })
@@ -158,12 +158,12 @@ async function handleSelectMenu(interaction, client) {
         .setAuthor({ 
             name: "Ticket Criado!", 
             iconURL: ticketIcons.correctIcon,
-            url: "https://discord.gg/xQF9f9yUEM"
+            url: "https://discord.gg/sdD2XwkA"
         })
         .setDescription(`- Seu ticket de ${ticketType} foi criado.`)
         .addFields(
-            { name: 'Ticket Channel', value: `${ticketChannel.url}` },
-            { name: 'Instructions', value: 'Por favor descreva seu problema.' }
+            { name: 'Canal de Ticket', value: `${ticketChannel.url}` },
+            { name: 'Instruções', value: 'Por favor descreva seu problema.' }
         )
         .setTimestamp()
         .setFooter({ text: 'Obrigado por nos contatar!', iconURL: ticketIcons.modIcon });
