@@ -8,9 +8,10 @@ const EMBED_FOLDER = path.join(__dirname, 'embeds');
 // Lista de palavras-chave e arquivos JSON correspondentes
 const keywordToEmbedMap = {
     "ouvir música": "musica.json",
-"baixar música": "musica.json",
+    "baixar música": "musica.json",
     "tela de bloqueio": "tbloqueio.json",
     "filmes": "filmes.json",
+    "innertune": "innertune.json",
     // Adicione mais palavras-chave e arquivos conforme necessário
 };
 
