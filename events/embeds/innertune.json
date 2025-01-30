@@ -1,0 +1,23 @@
+{
+  "content": null,
+  "embeds": [
+    {
+      "description": "Resposta automática\n\n**InnerTune**\nUm cliente Material 3 do YouTube Music para Android\n\n- InnerTune é um player de música Open-Source que\nPermite os usuários ouvirem música sem anúncios\n\nReproduza músicas do YT/YT Music sem anúncios\nReprodução em segundo plano\nDownload de músicas em cache, permitindo ouvir \nMúsicas offline, sem a  necessidade de uma conexão",
+      "url": "https://raw.githubusercontent.com/z-huang/InnerTune/dev/fastlane/metadata/android/en-US/images/phoneScreenshots/01.png",
+      "color": 26367,
+      "image": {
+        "url": "https://raw.githubusercontent.com/z-huang/InnerTune/dev/fastlane/metadata/android/en-US/images/phoneScreenshots/01.png"
+      },
+      "thumbnail": {
+        "url": "https://raw.githubusercontent.com/z-huang/InnerTune/dev/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.webp"
+      }
+    },
+    {
+      "url": "https://raw.githubusercontent.com/z-huang/InnerTune/dev/fastlane/metadata/android/en-US/images/phoneScreenshots/01.png",
+      "image": {
+        "url": "https://raw.githubusercontent.com/z-huang/InnerTune/dev/fastlane/metadata/android/en-US/images/phoneScreenshots/04.png"
+      }
+    }
+  ],
+  "attachments": []
+}
