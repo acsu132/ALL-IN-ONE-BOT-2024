@@ -2,20 +2,21 @@
   "content": null,
   "embeds": [
     {
+      "title": "ㅤㅤㅤㅤㅤㅤㅤ",
       "description": "Resposta automática\n\n[**InnerTune**](https://www.mediafire.com/file/7p9k5mv3g8zo2tz/InnerTune_v0.5.10.1_full+(1.apk/file)\nUm cliente Material 3 do YouTube Music para Android\n\n- InnerTune é um player de música Open-Source que\nPermite os usuários ouvirem música sem anúncios\n\nReproduza músicas do YT/YT Music sem anúncios\nReprodução em segundo plano\nDownload de músicas em cache, permitindo ouvir \nMúsicas offline, sem a  necessidade de uma conexão",
       "url": "https://raw.githubusercontent.com/z-huang/InnerTune/dev/fastlane/metadata/android/en-US/images/phoneScreenshots/01.png",
       "color": 26367,
       "image": {
-        "url": "https://raw.githubusercontent.com/z-huang/InnerTune/dev/fastlane/metadata/android/en-US/images/phoneScreenshots/01.png"
+        "url": "https://media.discordapp.net/attachments/1284876311516680282/1334686472053330003/01.png?ex=679d6f24&is=679c1da4&hm=f6036b13c2414f669dfa3f3b561ff8c54193fd525a015bdc6aa6572e170c5366&=&width=197&height=428"
       },
       "thumbnail": {
-        "url": "https://raw.githubusercontent.com/z-huang/InnerTune/dev/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.webp"
+        "url": "https://media.discordapp.net/attachments/1284876311516680282/1334686470862012416/ic_launcher_round.webp?ex=679d6f23&is=679c1da3&hm=bac6a8b487ca587d56d457836e500017c529a9775447528309665aca5a1ed69a&=&width=153&height=153"
       }
     },
     {
       "url": "https://raw.githubusercontent.com/z-huang/InnerTune/dev/fastlane/metadata/android/en-US/images/phoneScreenshots/01.png",
       "image": {
-        "url": "https://raw.githubusercontent.com/z-huang/InnerTune/dev/fastlane/metadata/android/en-US/images/phoneScreenshots/04.png"
+        "url": "https://media.discordapp.net/attachments/1284876311516680282/1334686471579238440/04.png?ex=679d6f24&is=679c1da4&hm=b189fd8c088e87c5efa504ff214170d47eed61d6975a80265690912ed54e8e73&=&width=197&height=428"
       }
     }
   ],
